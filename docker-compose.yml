@@ -1,0 +1,86 @@
+services:
+  fileuploader:
+    build: .
+    image: fileuploader:local
+    container_name: fileuploader
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8080
+      DATA_DIR: /app/data
+      DATABASE_URL: sqlite:///app/data/fileuploader.db
+      STATIC_DIR: /app/static
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      RUST_LOG: ${RUST_LOG:-info,aws_config=warn,aws_smithy_runtime=warn,hyper=warn}
+      TZ: ${TZ:-UTC}
+
+      # Optional first-run S3 configuration. After the first start it is
+      # managed in the UI. Leave S3_ACCESS_KEY / S3_SECRET_KEY empty to skip.
+      SEED_DEFAULT_S3: ${SEED_DEFAULT_S3:-true}
+      S3_CONFIG_ID: ${S3_CONFIG_ID:-default}
+      S3_CONFIG_NAME: ${S3_CONFIG_NAME:-Default S3}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_DEFAULT_PREFIX: ${S3_DEFAULT_PREFIX:-}
+      S3_PATH_STYLE: ${S3_PATH_STYLE:-false}
+      S3_USE_TLS: ${S3_USE_TLS:-true}
+
+      MEGA_HOME: /app/data/mega-home
+      MEGA_TEMP_DIR: /app/tmp/mega
+      MEGA_AUTO_START_SERVER: ${MEGA_AUTO_START_SERVER:-true}
+      MEGA_GET_PATH: ${MEGA_GET_PATH:-mega-get}
+      MEGA_SERVER_PATH: ${MEGA_SERVER_PATH:-mega-cmd-server}
+      MEGA_WHOAMI_PATH: ${MEGA_WHOAMI_PATH:-mega-whoami}
+
+      PART_SIZE_BYTES: ${PART_SIZE_BYTES:-16777216}
+      UPLOAD_CONCURRENCY: ${UPLOAD_CONCURRENCY:-2}
+      HTTP_BUFFER_BYTES: ${HTTP_BUFFER_BYTES:-1048576}
+      MAX_PENDING_PARTS: ${MAX_PENDING_PARTS:-2}
+      MAX_HTTP_TASKS: ${MAX_HTTP_TASKS:-3}
+      MAX_MEGA_TASKS: ${MAX_MEGA_TASKS:-1}
+      MAX_QUEUED_TASKS: ${MAX_QUEUED_TASKS:-50}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      HTTP_TIMEOUT_SECS: ${HTTP_TIMEOUT_SECS:-30}
+      MAX_REDIRECTS: ${MAX_REDIRECTS:-10}
+      MAX_FILE_BYTES: ${MAX_FILE_BYTES:-107374182400}
+      TASK_TIMEOUT_SECS: ${TASK_TIMEOUT_SECS:-86400}
+      MEGA_MAX_TASK_BYTES: ${MEGA_MAX_TASK_BYTES:-53687091200}
+      MEGA_TEMP_MAX_BYTES: ${MEGA_TEMP_MAX_BYTES:-214748364800}
+      MEGA_RETENTION_SECS: ${MEGA_RETENTION_SECS:-86400}
+      MEGA_MAX_DOWNLOADS: ${MEGA_MAX_DOWNLOADS:-1}
+      MEGA_DOWNLOAD_TIMEOUT_SECS: ${MEGA_DOWNLOAD_TIMEOUT_SECS:-21600}
+    volumes:
+      - fileuploader_data:/app/data
+      - fileuploader_mega_tmp:/app/tmp/mega
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+    # Conservative defaults; tune for your workload. Memory is bounded by
+    # Part Size × (pending parts + upload concurrency), independent of file size.
+    mem_limit: 1g
+    cpus: 2.0
+    pids_limit: 256
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+volumes:
+  fileuploader_data:
+  fileuploader_mega_tmp:

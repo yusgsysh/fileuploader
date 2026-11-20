@@ -1,0 +1,27 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Frontend
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+*.tsbuildinfo
+/frontend/vite.config.js
+/frontend/vite.config.d.ts
+
+# Runtime data
+/data/*
+!/data/.gitkeep
+/tmp/*
+!/tmp/.gitkeep
+
+# Environment and logs
+.env
+.env.local
+*.log
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
