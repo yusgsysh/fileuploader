@@ -117,10 +117,6 @@ async fn main() -> Result<()> {
             state.clone(),
             fileuploader::auth::require_session,
         ))
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            fileuploader::auth::basic_auth,
-        ))
         .with_state(state.clone());
 
     let listener = tokio::net::TcpListener::bind(config.bind)

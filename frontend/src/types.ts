@@ -225,6 +225,5 @@ export interface MegaTestResult {
 export interface AuthStatus {
   setup_required: boolean;
   authenticated: boolean;
-  basic_auth?: boolean;
   username?: string | null;
 }

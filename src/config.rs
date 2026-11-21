@@ -14,47 +14,6 @@ pub struct AppConfig {
     pub static_dir: PathBuf,
     pub log_format: LogFormat,
     pub seed_default_s3: bool,
-    pub basic_auth: Option<BasicAuthConfig>,
-}
-
-#[derive(Clone)]
-pub struct BasicAuthConfig {
-    pub username: String,
-    pub password: String,
-}
-
-impl std::fmt::Debug for BasicAuthConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BasicAuthConfig")
-            .field("username", &self.username)
-            .field("password", &"<redacted>")
-            .finish()
-    }
-}
-
-impl BasicAuthConfig {
-    pub fn from_env() -> Result<Option<Self>> {
-        let username = env::var("APP_BASIC_AUTH_USERNAME")
-            .ok()
-            .filter(|value| !value.is_empty());
-        let password = env::var("APP_BASIC_AUTH_PASSWORD")
-            .ok()
-            .filter(|value| !value.is_empty());
-        match (username, password) {
-            (None, None) => Ok(None),
-            (Some(_), None) | (None, Some(_)) => Err(anyhow::anyhow!(
-                "APP_BASIC_AUTH_USERNAME and APP_BASIC_AUTH_PASSWORD must be set together"
-            )),
-            (Some(username), Some(password)) => {
-                if username.contains(':') {
-                    return Err(anyhow::anyhow!(
-                        "APP_BASIC_AUTH_USERNAME cannot contain ':'"
-                    ));
-                }
-                Ok(Some(Self { username, password }))
-            }
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,7 +56,6 @@ impl AppConfig {
             seed_default_s3: env::var("SEED_DEFAULT_S3")
                 .map(|v| !matches!(v.as_str(), "0" | "false" | "no"))
                 .unwrap_or(true),
-            basic_auth: BasicAuthConfig::from_env()?,
         })
     }
 

@@ -13,7 +13,6 @@ pub struct AuthStatus {
     /// True when no account exists yet; the UI shows the initial setup form.
     pub setup_required: bool,
     pub authenticated: bool,
-    pub basic_auth: bool,
     pub username: Option<String>,
 }
 
@@ -42,7 +41,6 @@ pub async fn status(
     Ok(Json(AuthStatus {
         setup_required: account.is_none(),
         authenticated: username.is_some(),
-        basic_auth: state.config.basic_auth.is_some(),
         username,
     }))
 }
@@ -129,7 +127,6 @@ pub async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Respon
     let mut response = Json(AuthStatus {
         setup_required: false,
         authenticated: false,
-        basic_auth: state.config.basic_auth.is_some(),
         username: None,
     })
     .into_response();
@@ -200,12 +197,8 @@ pub async fn change_password(
 // ---------------------------------------------------------------------------
 
 async fn current_username(state: &AppState, headers: &HeaderMap) -> Option<String> {
-    if let Some(token) = auth::session_token(headers) {
-        if let Some(username) = state.sessions.validate(&token).await {
-            return Some(username);
-        }
-    }
-    auth::basic_authenticated_user(state, headers)
+    let token = auth::session_token(headers)?;
+    state.sessions.validate(&token).await
 }
 
 async fn start_session(
@@ -221,7 +214,6 @@ async fn start_session(
         AuthStatus {
             setup_required,
             authenticated: true,
-            basic_auth: state.config.basic_auth.is_some(),
             username: Some(username),
         },
         auth::session_cookie(&token, secure),

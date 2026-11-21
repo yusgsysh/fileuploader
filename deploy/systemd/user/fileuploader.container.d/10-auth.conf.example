@@ -1,6 +1,0 @@
-# Copy to 10-auth.conf to enable HTTP Basic Auth.
-# Create the referenced file first (mode 0600):
-#   APP_BASIC_AUTH_USERNAME=admin
-#   APP_BASIC_AUTH_PASSWORD=change-me
-[Container]
-EnvironmentFile=%h/.config/fileuploader-auth.env

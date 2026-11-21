@@ -409,8 +409,6 @@ curl http://127.0.0.1:8080/healthz
 | `STATIC_DIR` | `./frontend/dist` | 前端构建产物 |
 | `LOG_FORMAT` | `pretty` | `pretty` / `json` |
 | `SEED_DEFAULT_S3` | `true` | 是否尝试从环境变量写入首个 S3 配置 |
-| `APP_BASIC_AUTH_USERNAME` | — | 可选：登录页之外的 Basic Auth 额外防护用户名 |
-| `APP_BASIC_AUTH_PASSWORD` | — | 可选：Basic Auth 额外防护密码，需与用户名同时设置 |
 | `S3_*` | — | 首次启动 S3 配置与环境凭据 |
 | `MEGA_HOME` | `./data/mega-home` | MEGAcmd HOME |
 | `MEGA_TEMP_DIR` | `./tmp/mega` | 临时目录根 |
@@ -509,47 +507,19 @@ SSE 事件：
 
 账号信息保存在 SQLite 的 `auth_account` 表中：
 
-- 密码使用 **PBKDF2-HMAC-SHA256（210,000 次迭代、随机盐）** 哈希后存储，不保存明文。
+- 密码使用加盐哈希（210,000 次迭代、随机盐）存储，不保存明文。
 - 登录状态保存在内存中的随机 Session Token 中，通过 `HttpOnly`、`SameSite=Lax` Cookie 传递，有效期 7 天。
 - 会话只存在内存中，服务重启后需要重新登录。
 - 设置页的「账号」标签可以修改密码；修改后其他设备上的会话会立即失效。
 
-### 可选：HTTP Basic Auth 额外防护
-
-原有的 Basic Auth 仍然可用，可作为反向代理之外的一层额外保护。设置后 Basic Auth 凭据也会被视为已登录，不会再次弹出应用登录页：
-
-```dotenv
-APP_BASIC_AUTH_USERNAME=admin
-APP_BASIC_AUTH_PASSWORD=change-this-long-password
-```
-
-两者必须同时设置。使用 systemd + Quadlet 时仍可通过脚本生成凭据文件：
-
-```bash
-# rootless
-./scripts/setup-basic-auth.sh
-
-# 指定用户名/密码
-./scripts/setup-basic-auth.sh admin 'your-password'
-
-# rootful
-sudo ./scripts/setup-basic-auth.sh --system
-```
-
-脚本会写入：
-
-- Rootless：`~/.config/fileuploader-auth.env`
-- Rootful：`/etc/fileuploader-auth.env`
-- 对应 Quadlet 的 `fileuploader.container.d/10-auth.conf`
-
 ### 行为
 
-- `/api/*` 与 SSE 需要有效的登录会话或 Basic Auth 凭据，否则返回 `401`。
+- `/api/*` 与 SSE 需要有效的登录会话，否则返回 `401`。
 - `/healthz` 不要求认证，确保 Docker/Podman/systemd 健康检查正常。
 - 静态资源与登录页保持公开，仅用于完成登录流程；业务 API 始终受保护。
 - 密码使用常量时间比较，失败不记录用户名/密码。
 - 登录认证仅做访问控制，**不能替代 HTTPS**。公开网络必须通过 Caddy/Nginx/Traefik 等提供 TLS。
-- 这里的认证保护管理界面；单次 HTTP 下载任务的 Basic Auth 仍独立配置在任务表单中。
+- 单次 HTTP 下载任务的 Basic Auth 仍独立配置在任务表单中，用于访问受保护的下载链接。
 
 > 需要多用户、2FA、审计等更强能力时，建议在反向代理层接入 Authelia/Authentik 或 OAuth2 Proxy。
 

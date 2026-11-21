@@ -124,21 +124,15 @@ export function AppShell() {
               <span className="truncate">
                 账号：<span className="text-slate-700">{status?.username ?? "管理员"}</span>
               </span>
-              {status?.basic_auth ? (
-                <span className="shrink-0 text-slate-600" title="已启用 HTTP Basic Auth">
-                  Basic
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void logout()}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-rose-600"
-                  title="退出登录"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  退出
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-rose-600"
+                title="退出登录"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                退出
+              </button>
             </div>
           </div>
         </aside>
@@ -164,16 +158,14 @@ export function AppShell() {
                     <item.icon className="h-5 w-5" />
                   </NavLink>
                 ))}
-                {status?.basic_auth ? null : (
-                  <button
-                    type="button"
-                    onClick={() => void logout()}
-                    className="rounded-lg p-2 text-slate-500 transition-colors hover:text-rose-600"
-                    aria-label="退出登录"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className="rounded-lg p-2 text-slate-500 transition-colors hover:text-rose-600"
+                  aria-label="退出登录"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
               </nav>
             </div>
           </header>

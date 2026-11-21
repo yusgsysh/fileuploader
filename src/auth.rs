@@ -201,39 +201,6 @@ pub fn set_cookie_header(value: String) -> (header::HeaderName, HeaderValue) {
 // Middleware
 // ---------------------------------------------------------------------------
 
-/// HTTP Basic authentication for the whole application (optional).
-///
-/// When `APP_BASIC_AUTH_USERNAME`/`APP_BASIC_AUTH_PASSWORD` are configured this
-/// runs in front of the session login and counts as a valid authentication, so
-/// existing Basic-auth deployments keep working without a second login.
-///
-/// `/healthz` stays unauthenticated so container/systemd health checks work.
-/// Browsers cache Basic credentials and reuse them for same-origin fetch and
-/// EventSource/SSE requests after the initial challenge.
-pub async fn basic_auth(State(state): State<AppState>, request: Request, next: Next) -> Response {
-    let Some(config) = state.config.basic_auth.as_ref() else {
-        return next.run(request).await;
-    };
-
-    if request.uri().path() == "/healthz" {
-        return next.run(request).await;
-    }
-
-    if basic_credentials_ok(config, request.headers()) {
-        return next.run(request).await;
-    }
-
-    let mut response = (StatusCode::UNAUTHORIZED, "Authentication required\n").into_response();
-    response.headers_mut().insert(
-        header::WWW_AUTHENTICATE,
-        HeaderValue::from_static("Basic realm=\"FileUploader\", charset=\"UTF-8\""),
-    );
-    response
-        .headers_mut()
-        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    response
-}
-
 /// Protects the JSON/SSE API with a session cookie. Static assets and the SPA
 /// stay public so the login page itself can be served; the UI decides what to
 /// render from `/api/auth/status`.
@@ -253,16 +220,6 @@ pub async fn require_session(
         return next.run(request).await;
     }
 
-    // An already authenticated Basic-auth request counts as logged in.
-    if state
-        .config
-        .basic_auth
-        .as_ref()
-        .is_some_and(|config| basic_credentials_ok(config, request.headers()))
-    {
-        return next.run(request).await;
-    }
-
     if let Some(token) = session_token(request.headers()) {
         if state.sessions.validate(&token).await.is_some() {
             return next.run(request).await;
@@ -270,27 +227,6 @@ pub async fn require_session(
     }
 
     unauthorized_response()
-}
-
-pub fn basic_credentials_ok(config: &crate::config::BasicAuthConfig, headers: &HeaderMap) -> bool {
-    let credentials = headers
-        .get(header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .and_then(parse_basic_credentials);
-
-    match credentials {
-        Some((username, password)) => {
-            let username_ok = constant_time_eq(username.as_bytes(), config.username.as_bytes());
-            let password_ok = constant_time_eq(password.as_bytes(), config.password.as_bytes());
-            username_ok & password_ok
-        }
-        None => false,
-    }
-}
-
-pub fn basic_authenticated_user(state: &AppState, headers: &HeaderMap) -> Option<String> {
-    let config = state.config.basic_auth.as_ref()?;
-    basic_credentials_ok(config, headers).then(|| config.username.clone())
 }
 
 fn unauthorized_response() -> Response {
@@ -307,17 +243,6 @@ fn unauthorized_response() -> Response {
     response
 }
 
-fn parse_basic_credentials(value: &str) -> Option<(String, String)> {
-    let (scheme, encoded) = value.split_once(' ')?;
-    if !scheme.eq_ignore_ascii_case("Basic") {
-        return None;
-    }
-    let decoded = STANDARD.decode(encoded.trim()).ok()?;
-    let decoded = String::from_utf8(decoded).ok()?;
-    let (username, password) = decoded.split_once(':')?;
-    Some((username.to_string(), password.to_string()))
-}
-
 fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
     if left.len() != right.len() {
         return false;
@@ -328,21 +253,6 @@ fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn encode(value: &str) -> String {
-        STANDARD.encode(value.as_bytes())
-    }
-
-    #[test]
-    fn parses_basic_authorization_header() {
-        let value = format!("Basic {}", encode("alice:s3cret:with:colons"));
-        assert_eq!(
-            parse_basic_credentials(&value),
-            Some(("alice".into(), "s3cret:with:colons".into()))
-        );
-        assert!(parse_basic_credentials("Bearer token").is_none());
-        assert!(parse_basic_credentials("Basic !!!").is_none());
-    }
 
     #[test]
     fn constant_time_comparison() {
