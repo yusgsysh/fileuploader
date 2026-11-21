@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type React from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import {
   Eye,
@@ -19,6 +20,7 @@ import { Field, Input } from "@/components/ui/input";
 
 export function LoginPage() {
   const { status, refresh } = useAuth();
+  const navigate = useNavigate();
   const setupRequired = status?.setup_required ?? false;
 
   const [username, setUsername] = useState("");
@@ -33,6 +35,9 @@ export function LoginPage() {
         : api.login(username.trim(), password),
     onSuccess: async () => {
       toast.success(setupRequired ? "管理员账号创建成功" : "登录成功");
+      // Always land on the new-download page, regardless of the URL that was
+      // open when the session expired or the user logged out.
+      navigate("/", { replace: true });
       await refresh();
     },
     onError: (error) => {
