@@ -26,11 +26,17 @@ ENV CARGO_NET_RETRY=5 \
     CARGO_HTTP_TIMEOUT=60
 COPY Cargo.toml Cargo.lock ./
 # Build dependency crates in a cached layer. Source changes then only rebuild
-# this crate instead of recompiling the entire dependency graph.
+# this crate instead of recompiling the entire dependency graph. The dummy
+# sources use none of the dependencies, which would make Cargo 1.100 emit an
+# unused-dependency warning for every crate; allow that lint only for this
+# warm-up build and restore the real manifest afterwards.
 RUN mkdir -p src \
+    && cp Cargo.toml Cargo.toml.warmup \
+    && printf '\n[lints.cargo]\nunused_dependencies = "allow"\n' >> Cargo.toml \
     && printf 'fn main() {}\n' > src/main.rs \
     && printf 'pub fn placeholder() {}\n' > src/lib.rs \
     && cargo build --release --locked \
+    && mv Cargo.toml.warmup Cargo.toml \
     && rm -rf src
 COPY src ./src
 # BuildKit keeps the build context's mtimes, which are older than the dummy
