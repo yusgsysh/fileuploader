@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -85,42 +85,101 @@ export function SettingsPage() {
 
 function useSettings() {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: queryKeys.settings, queryFn: api.getSettings });
+  // Settings live in SQLite. Always load the latest copy from the API when the
+  // page is opened instead of keeping a long-lived client cache.
+  const query = useQuery({
+    queryKey: queryKeys.settings,
+    queryFn: api.getSettings,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const latest = useRef<AppSettings | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saving = useRef(false);
 
   useEffect(() => {
-    if (query.data) setSettings(query.data);
+    if (query.data) {
+      latest.current = query.data;
+      setSettings(query.data);
+    }
   }, [query.data]);
 
   const save = useMutation({
     mutationFn: api.updateSettings,
-    onSuccess: (value) => {
-      setSettings(value);
-      queryClient.setQueryData(queryKeys.settings, value);
+    onSuccess: (value, variables) => {
+      // Only replace the draft when no newer edit happened while the request
+      // was in flight. The backend is the source of truth either way.
+      if (latest.current === variables) {
+        latest.current = value;
+        setSettings(value);
+      }
       void queryClient.invalidateQueries({ queryKey: queryKeys.system });
-      toast.success("设置已保存");
     },
-    onError: (error) =>
+    onError: (error) => {
       toast.error("保存设置失败", {
         description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
-      }),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings });
+    },
+    onSettled: (_value, _error, variables) => {
+      saving.current = false;
+      const next = latest.current;
+      // Edits made while the request was in flight are written next, keeping
+      // requests serialized so an older payload cannot overwrite a newer one.
+      if (next && next !== variables) {
+        if (timer.current) {
+          clearTimeout(timer.current);
+          timer.current = null;
+        }
+        saving.current = true;
+        save.mutate(next);
+      }
+    },
   });
 
-  const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    setSettings((current) => (current ? { ...current, [key]: value } : current));
+  const scheduleSave = (next: AppSettings) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      if (saving.current) return;
+      saving.current = true;
+      save.mutate(next);
+    }, 600);
   };
 
-  return { settings, update, save, isLoading: query.isLoading };
+  const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
+    const current = latest.current;
+    if (!current) return;
+    const next = { ...current, [key]: value };
+    latest.current = next;
+    setSettings(next);
+    scheduleSave(next);
+  };
+
+  // Flush a change that is still inside the debounce window when the user
+  // leaves the page.
+  useEffect(() => {
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+        if (latest.current) void api.updateSettings(latest.current);
+      }
+    };
+  }, []);
+
+  return { settings, update, isLoading: query.isLoading };
 }
 
 type SettingsState = ReturnType<typeof useSettings>;
 
 function TransferSettings({ state }: { state: SettingsState }) {
-  const { settings, update, save, isLoading } = state;
+  const { settings, update, isLoading } = state;
   if (isLoading || !settings) return <SettingsSkeleton />;
 
   return (
-    <div className="space-y-5 pb-28">
+    <div className="space-y-5">
         <SettingsSection
           icon={Boxes}
           title="分片上传"
@@ -229,13 +288,12 @@ function TransferSettings({ state }: { state: SettingsState }) {
           </div>
         </SettingsSection>
 
-        <SaveBar pending={save.isPending} onClick={() => save.mutate(settings)} />
     </div>
   );
 }
 
 function MegaSettings({ state }: { state: SettingsState }) {
-  const { settings, update, save, isLoading } = state;
+  const { settings, update, isLoading } = state;
   const queryClient = useQueryClient();
   const { data: status, refetch, isFetching } = useQuery({
     queryKey: ["mega-status"],
@@ -263,7 +321,7 @@ function MegaSettings({ state }: { state: SettingsState }) {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="space-y-5 pb-28">
+      <div className="space-y-5">
         <SettingsSection
           icon={ServerCog}
           title="MEGAcmd 路径"
@@ -365,7 +423,6 @@ function MegaSettings({ state }: { state: SettingsState }) {
           </div>
         </SettingsSection>
 
-        <SaveBar pending={save.isPending} onClick={() => save.mutate(settings)} />
       </div>
 
       <aside className="space-y-5">
@@ -1027,17 +1084,6 @@ function NumberField({
         ) : null}
       </div>
     </Field>
-  );
-}
-
-function SaveBar({ pending, onClick }: { pending: boolean; onClick: () => void }) {
-  return (
-    <div className="sticky bottom-4 z-20 flex items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-background/90 px-4 py-3 shadow-panel backdrop-blur-xl">
-      <Button onClick={onClick} disabled={pending}>
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        保存更改
-      </Button>
-    </div>
   );
 }
 
