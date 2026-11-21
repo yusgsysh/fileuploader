@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  AuthStatus,
   BucketInfo,
   CreateTaskInput,
   MegaStatus,
@@ -35,7 +36,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!response.ok) {
-    let message = `Request failed (${response.status})`;
+    let message = `请求失败（${response.status}）`;
     let code = "request_failed";
     try {
       const body = await response.json();
@@ -43,6 +44,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       code = body?.error?.code ?? code;
     } catch {
       // Keep the status-based fallback.
+    }
+    if (response.status === 401 && !path.startsWith("/auth/")) {
+      window.dispatchEvent(new Event("fu:unauthorized"));
     }
     throw new ApiError(message, code, response.status);
   }
@@ -53,6 +57,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  authStatus: () => request<AuthStatus>("/auth/status"),
+  login: (username: string, password: string) =>
+    request<AuthStatus>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+  setup: (username: string, password: string) =>
+    request<AuthStatus>("/auth/setup", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+  logout: () => request<AuthStatus>("/auth/logout", { method: "POST" }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<AuthStatus>("/auth/password", {
+      method: "POST",
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    }),
+
   listTasks: (limit = 200) => request<Task[]>(`/tasks?limit=${limit}`),
   getTask: (id: string) => request<TaskDetail>(`/tasks/${id}`),
   createTask: (input: CreateTaskInput) =>
@@ -104,6 +129,7 @@ export const api = {
 };
 
 export const queryKeys = {
+  auth: ["auth"] as const,
   tasks: ["tasks"] as const,
   task: (id: string) => ["task", id] as const,
   settings: ["settings"] as const,

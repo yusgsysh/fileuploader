@@ -46,5 +46,5 @@ export function SourceBadge({ source }: { source?: "http" | "mega" | null }) {
       </Badge>
     );
   }
-  return <Badge>auto</Badge>;
+  return <Badge>自动</Badge>;
 }

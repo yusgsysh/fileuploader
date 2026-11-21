@@ -72,6 +72,7 @@ async fn main() -> Result<()> {
     let state = AppState {
         config: config.clone(),
         db: store,
+        sessions: std::sync::Arc::new(fileuploader::auth::SessionStore::new()),
         settings,
         s3,
         mega,
@@ -111,6 +112,10 @@ async fn main() -> Result<()> {
             HeaderValue::from_static(
                 "default-src 'self'; connect-src 'self'; img-src 'self' data:;                  style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self';                  frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
             ),
+        ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            fileuploader::auth::require_session,
         ))
         .layer(middleware::from_fn_with_state(
             state.clone(),

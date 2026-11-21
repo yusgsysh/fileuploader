@@ -4,7 +4,7 @@ import { api, ApiError, queryKeys } from "@/lib/api";
 import type { Task, TaskDetail } from "@/types";
 
 function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : "Request failed";
+  return error instanceof ApiError ? error.message : "请求失败，请稍后再试";
 }
 
 export function useTaskActions() {
@@ -30,20 +30,20 @@ export function useTaskActions() {
     mutationFn: api.cancelTask,
     onSuccess: (task) => {
       mergeTask(task);
-      toast.info("Cancellation requested", {
-        description: "Active connections will be closed and multipart parts aborted.",
+      toast.info("已请求取消", {
+        description: "正在关闭活动连接并中止未完成的分片上传。",
       });
     },
-    onError: (error) => toast.error("Could not cancel task", { description: errorMessage(error) }),
+    onError: (error) => toast.error("取消任务失败", { description: errorMessage(error) }),
   });
 
   const retry = useMutation({
     mutationFn: api.retryTask,
     onSuccess: (task) => {
       mergeTask(task);
-      toast.success("Retry queued", { description: task.filename });
+      toast.success("已加入重试队列", { description: task.filename });
     },
-    onError: (error) => toast.error("Could not retry task", { description: errorMessage(error) }),
+    onError: (error) => toast.error("重试任务失败", { description: errorMessage(error) }),
   });
 
   const remove = useMutation({
@@ -53,13 +53,13 @@ export function useTaskActions() {
         old ? old.filter((task) => task.id !== id) : old,
       );
       queryClient.removeQueries({ queryKey: queryKeys.task(id) });
-      toast.success("Task record deleted");
+      toast.success("任务记录已删除");
     },
-    onError: (error) => toast.error("Could not delete task", { description: errorMessage(error) }),
+    onError: (error) => toast.error("删除任务失败", { description: errorMessage(error) }),
   });
 
   const deleteTask = (id: string, onDeleted?: () => void) => {
-    if (window.confirm("Delete this task record? Temporary MEGA files will also be removed.")) {
+    if (window.confirm("确定删除该任务记录吗？MEGA 临时文件也会一并清理。")) {
       remove.mutate(id, { onSuccess: () => onDeleted?.() });
     }
   };

@@ -60,8 +60,8 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        glow: "0 0 0 1px hsl(188 92% 55% / 0.16), 0 12px 48px -16px hsl(188 92% 50% / 0.35)",
-        panel: "0 18px 60px -30px rgb(0 0 0 / 0.9)",
+        glow: "0 0 0 1px hsl(189 94% 37% / 0.12), 0 10px 32px -16px hsl(189 94% 40% / 0.3)",
+        panel: "0 18px 50px -28px rgb(15 23 42 / 0.28)",
       },
       keyframes: {
         "fade-up": {
@@ -87,7 +87,7 @@ export default {
       },
       backgroundImage: {
         "grid-faint":
-          "linear-gradient(to right, rgb(148 163 184 / 0.07) 1px, transparent 1px), linear-gradient(to bottom, rgb(148 163 184 / 0.07) 1px, transparent 1px)",
+          "linear-gradient(to right, rgb(100 116 139 / 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgb(100 116 139 / 0.1) 1px, transparent 1px)",
       },
     },
   },

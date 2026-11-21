@@ -33,9 +33,9 @@ export function TaskCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-card/65 p-4 transition-all duration-200 hover:border-white/[0.12] hover:bg-card/85 sm:p-5",
-        task.status === "failed" && "border-rose-400/15",
-        task.status === "completed" && "border-emerald-400/10",
+        "group relative overflow-hidden rounded-2xl border border-slate-200 bg-card/65 p-4 transition-all duration-200 hover:border-slate-300 hover:bg-card/85 sm:p-5",
+        task.status === "failed" && "border-rose-200",
+        task.status === "completed" && "border-emerald-100",
       )}
     >
       <div className="flex items-start gap-3 sm:gap-4">
@@ -45,10 +45,10 @@ export function TaskCard({
             <div className="min-w-0">
               <Link
                 to={`/tasks/${task.id}`}
-                className="group/link inline-flex max-w-full items-center gap-1.5 text-[15px] font-medium text-slate-100 transition-colors hover:text-cyan-200"
+                className="group/link inline-flex max-w-full items-center gap-1.5 text-[15px] font-medium text-slate-900 transition-colors hover:text-cyan-700"
               >
-                <span className="truncate">{task.filename || "Untitled download"}</span>
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-600 transition-transform group-hover/link:translate-x-0.5 group-hover/link:text-cyan-300" />
+                <span className="truncate">{task.filename || "未命名下载"}</span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-600 transition-transform group-hover/link:translate-x-0.5 group-hover/link:text-cyan-700" />
               </Link>
               <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-500">
                 <SourceBadge source={task.resolved_source} />
@@ -56,7 +56,7 @@ export function TaskCard({
                 <span className="truncate">{hostnameOf(task.url)}</span>
                 {task.total_bytes ? <span>{formatBytes(task.total_bytes)}</span> : null}
                 {task.attempt > 1 ? (
-                  <span className="text-amber-300/80">attempt {task.attempt}</span>
+                  <span className="text-amber-700/80">第 {task.attempt} 次尝试</span>
                 ) : null}
               </div>
             </div>
@@ -69,7 +69,7 @@ export function TaskCard({
             <TaskProgress task={task} compact />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.05] pt-3">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3">
             <div className="flex min-w-0 items-center gap-2 text-[11px] text-slate-500">
               <span className="truncate font-mono text-slate-500">
                 {task.bucket}/{task.s3_key ?? task.object_key ?? "auto"}
@@ -84,11 +84,11 @@ export function TaskCard({
                   variant="ghost"
                   disabled={busy}
                   onClick={() => onCancel(task.id)}
-                  title="Cancel task"
-                  className="text-slate-400 hover:text-amber-200"
+                  title="取消任务"
+                  className="text-slate-600 hover:text-amber-700"
                 >
                   <XCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Cancel</span>
+                  <span className="hidden sm:inline">取消</span>
                 </Button>
               ) : null}
               {canRetry ? (
@@ -97,11 +97,11 @@ export function TaskCard({
                   variant="ghost"
                   disabled={busy}
                   onClick={() => onRetry(task.id)}
-                  title="Retry task"
-                  className="text-slate-400 hover:text-cyan-200"
+                  title="重试任务"
+                  className="text-slate-600 hover:text-cyan-700"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Retry</span>
+                  <span className="hidden sm:inline">重试</span>
                 </Button>
               ) : null}
               {terminal ? (
@@ -110,8 +110,8 @@ export function TaskCard({
                   variant="ghost"
                   disabled={busy}
                   onClick={() => onDelete(task.id)}
-                  title="Delete record"
-                  className="text-slate-500 hover:text-rose-300"
+                  title="删除记录"
+                  className="text-slate-500 hover:text-rose-600"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -120,9 +120,9 @@ export function TaskCard({
           </div>
 
           {task.error ? (
-            <div className="mt-3 rounded-lg border border-rose-400/15 bg-rose-400/[0.05] px-3 py-2 text-[11px] leading-relaxed text-rose-200/90">
-              <span className="mr-1.5 font-medium text-rose-300">
-                {task.status === "cancelled" ? "Cancelled" : "Error"}:
+            <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] leading-relaxed text-rose-700/90">
+              <span className="mr-1.5 font-medium text-rose-600">
+                {task.status === "cancelled" ? "已取消" : "错误"}：
               </span>
               {task.error}
             </div>

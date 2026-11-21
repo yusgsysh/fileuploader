@@ -22,13 +22,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <App />
         <Toaster
-          theme="dark"
+          theme="light"
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "hsl(220 32% 9%)",
-              border: "1px solid hsl(219 22% 18%)",
-              color: "hsl(210 30% 96%)",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              color: "#0f172a",
             },
           }}
         />

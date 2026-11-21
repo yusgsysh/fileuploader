@@ -118,14 +118,14 @@ export function HomePage() {
     onSuccess: (task) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
       void queryClient.invalidateQueries({ queryKey: queryKeys.system });
-      toast.success("Transfer queued", {
+      toast.success("已创建传输任务", {
         description: `${task.filename} · ${task.bucket}`,
       });
       navigate(`/tasks/${task.id}`);
     },
     onError: (error) => {
-      toast.error("Could not create task", {
-        description: error instanceof ApiError ? error.message : "Request failed",
+      toast.error("创建任务失败", {
+        description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
       });
     },
   });
@@ -137,15 +137,15 @@ export function HomePage() {
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.url.trim()) {
-      toast.error("Paste a download URL first");
+      toast.error("请先粘贴下载链接");
       return;
     }
     if (!form.s3_config_id) {
-      toast.error("Choose an S3 configuration");
+      toast.error("请选择 S3 配置");
       return;
     }
     if (!form.bucket.trim()) {
-      toast.error("Bucket is required");
+      toast.error("请填写存储桶名称");
       return;
     }
     const input: CreateTaskInput = {
@@ -171,43 +171,43 @@ export function HomePage() {
 
   return (
     <div className="space-y-7 animate-fade-up">
-      <section className="relative overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-br from-white/[0.045] via-card/50 to-card/20 px-6 py-8 sm:px-9 sm:py-10">
-        <div className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-36 left-1/3 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-card/50 to-card/20 px-6 py-8 sm:px-9 sm:py-10">
+        <div className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full bg-cyan-50 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-36 left-1/3 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl" />
         <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1 text-[11px] text-cyan-200">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] text-cyan-700">
               <Sparkles className="h-3.5 w-3.5" />
-              Streaming-first transfer engine
+              流式优先的传输引擎
             </div>
-            <h1 className="text-balance text-3xl font-semibold tracking-tight text-white sm:text-[40px] sm:leading-[1.08]">
-              Pull a link. Stream it.
+            <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-[40px] sm:leading-[1.08]">
+              粘贴链接，立即流式传输。
               <br />
-              <span className="gradient-text">Store it in S3.</span>
+              <span className="gradient-text">直接写入 S3。</span>
             </h1>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-400">
-              HTTP downloads never touch local disk. MEGA links go through official{" "}
-              <code className="rounded bg-white/[0.06] px-1 py-0.5 text-[11px] text-slate-300">mega-get</code>{" "}
-              and upload from an isolated temp directory. Both share one bounded multipart engine.
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
+              HTTP 下载全程不落盘。MEGA 链接通过官方{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] text-slate-700">mega-get</code>{" "}
+              下载到隔离的临时目录后再上传。两者共用同一个有界分片上传引擎。
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:min-w-[370px]">
             {[
-              { label: "Active", value: system?.active_tasks ?? "—", icon: Gauge },
-              { label: "Queued", value: system?.tasks.pending ?? "—", icon: DownloadCloud },
-              { label: "Completed", value: system?.tasks.completed ?? "—", icon: CheckCircle2 },
+              { label: "进行中", value: system?.active_tasks ?? "—", icon: Gauge },
+              { label: "排队中", value: system?.tasks.pending ?? "—", icon: DownloadCloud },
+              { label: "已完成", value: system?.tasks.completed ?? "—", icon: CheckCircle2 },
               {
-                label: "MEGA temp",
+                label: "MEGA 临时空间",
                 value: system ? formatBytes(system.mega_temp_bytes) : "—",
                 icon: HardDrive,
               },
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-xl border border-white/[0.06] bg-black/15 px-3 py-3"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
               >
-                <stat.icon className="mb-2 h-3.5 w-3.5 text-cyan-400/80" />
-                <div className="truncate font-mono text-lg font-semibold text-slate-100">
+                <stat.icon className="mb-2 h-3.5 w-3.5 text-cyan-600/80" />
+                <div className="truncate font-mono text-lg font-semibold text-slate-900">
                   {stat.value}
                 </div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500">
@@ -221,29 +221,28 @@ export function HomePage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
             <div className="flex items-center gap-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-cyan-400/10 text-cyan-300">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-cyan-50 text-cyan-700">
                 <Link2 className="h-4 w-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-100">New transfer</h2>
+                <h2 className="text-sm font-semibold text-slate-900">新建传输任务</h2>
                 <p className="text-[11px] text-slate-500">
-                  Source, destination and transfer policy
+                  设置来源、目标与传输策略
                 </p>
               </div>
             </div>
-            <Badge tone="cyan">{detected ? detected.toUpperCase() : "AUTO DETECT"}</Badge>
+            <Badge tone="cyan">{detected ? detected.toUpperCase() : "自动识别"}</Badge>
           </div>
 
           <form onSubmit={submit} className="space-y-6 p-5 sm:p-6">
             <div>
               <Field
-                label="Download URL"
+                label="下载链接"
                 hint={
                   <>
-                    HTTP/HTTPS links are fetched with SSRF protection. MEGA share links use official
-                    MEGAcmd. The full share key is preserved.
+                    HTTP/HTTPS 链接带 SSRF 防护抓取；MEGA 分享链接使用官方 MEGAcmd，完整分享密钥会被保留。
                   </>
                 }
               >
@@ -252,7 +251,7 @@ export function HomePage() {
                   <Input
                     value={form.url}
                     onChange={(event) => update("url", event.target.value)}
-                    placeholder="https://example.com/archive.zip or https://mega.nz/file/..."
+                    placeholder="https://example.com/archive.zip 或 https://mega.nz/file/..."
                     className="h-12 pl-10 pr-24 text-sm"
                     autoFocus
                     spellCheck={false}
@@ -261,15 +260,15 @@ export function HomePage() {
                     {detected ? (
                       <SourceBadge source={detected} />
                     ) : (
-                      <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-slate-500">
-                        waiting
+                      <span className="rounded-full border border-slate-200 px-2 py-1 text-[10px] text-slate-500">
+                        等待输入
                       </span>
                     )}
                   </div>
                 </div>
               </Field>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-[11px] text-slate-500">Source</span>
+                <span className="text-[11px] text-slate-500">来源</span>
                 {(["auto", "http", "mega"] as SourceType[]).map((type) => (
                   <button
                     key={type}
@@ -278,23 +277,23 @@ export function HomePage() {
                     className={cn(
                       "rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
                       form.source_type === type
-                        ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
-                        : "border-white/10 bg-white/[0.02] text-slate-400 hover:text-slate-200",
+                        ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-800",
                     )}
                   >
-                    {type === "auto" ? "Auto" : type.toUpperCase()}
+                    {type === "auto" ? "自动" : type.toUpperCase()}
                   </button>
                 ))}
                 {detected && form.source_type !== "auto" && detected !== form.source_type ? (
-                  <span className="text-[11px] text-amber-300">
-                    URL looks like {detected.toUpperCase()}
+                  <span className="text-[11px] text-amber-700">
+                    链接看起来是 {detected.toUpperCase()}
                   </span>
                 ) : null}
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="S3 configuration" hint="Credentials stay on the server.">
+              <Field label="S3 配置" hint="访问凭据仅保存在服务器端。">
                 <Select
                   value={form.s3_config_id}
                   onChange={(event) => {
@@ -309,7 +308,7 @@ export function HomePage() {
                   disabled={configsLoading}
                 >
                   <option value="" disabled>
-                    {configsLoading ? "Loading…" : "Select configuration"}
+                    {configsLoading ? "加载中…" : "请选择配置"}
                   </option>
                   {configs?.map((item) => (
                     <option key={item.id} value={item.id}>
@@ -318,7 +317,7 @@ export function HomePage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Bucket" hint="Type any bucket or pick one visible to these credentials.">
+              <Field label="存储桶" hint="可手动输入，也可从当前凭据可见的存储桶中选择。">
                 <Input
                   value={form.bucket}
                   onChange={(event) => update("bucket", event.target.value)}
@@ -332,8 +331,8 @@ export function HomePage() {
                 </datalist>
               </Field>
               <Field
-                label="Object path"
-                hint="Optional. End with / to append the detected filename. For MEGA folders this is a prefix."
+                label="对象路径"
+                hint="可选。以 / 结尾会自动拼接识别出的文件名；MEGA 文件夹任务中作为前缀。"
               >
                 <Input
                   value={form.object_key}
@@ -342,7 +341,7 @@ export function HomePage() {
                   spellCheck={false}
                 />
               </Field>
-              <Field label="Custom filename" hint="Optional. Content-Disposition is used otherwise.">
+              <Field label="自定义文件名" hint="可选。未填写时使用 Content-Disposition 中的文件名。">
                 <Input
                   value={form.filename}
                   onChange={(event) => update("filename", event.target.value)}
@@ -355,13 +354,13 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => setAdvanced((value) => !value)}
-              className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100"
             >
-              <span className="flex items-center gap-2 text-xs font-medium text-slate-300">
+              <span className="flex items-center gap-2 text-xs font-medium text-slate-700">
                 <KeyRound className="h-3.5 w-3.5 text-slate-500" />
-                Request options & credentials
+                请求选项与凭据
                 <span className="text-[10px] font-normal text-slate-600">
-                  User-Agent, cookies, headers, Basic Auth
+                  User-Agent、Cookie、请求头、Basic Auth
                 </span>
               </span>
               <ChevronDown
@@ -373,12 +372,12 @@ export function HomePage() {
             </button>
 
             {advanced ? (
-              <div className="grid gap-4 rounded-2xl border border-white/[0.06] bg-black/15 p-4 sm:grid-cols-2">
+              <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
                 <Field label="User-Agent">
                   <Input
                     value={form.user_agent}
                     onChange={(event) => update("user_agent", event.target.value)}
-                    placeholder="Default FileUploader agent"
+                    placeholder="默认 FileUploader 客户端"
                   />
                 </Field>
                 <Field label="Referer">
@@ -395,15 +394,15 @@ export function HomePage() {
                     placeholder="session=…"
                   />
                 </Field>
-                <Field label="Basic Auth username">
+                <Field label="Basic Auth 用户名">
                   <Input
                     value={form.auth_username}
                     onChange={(event) => update("auth_username", event.target.value)}
-                    placeholder="username"
+                    placeholder="用户名"
                     autoComplete="off"
                   />
                 </Field>
-                <Field label="Basic Auth password">
+                <Field label="Basic Auth 密码">
                   <Input
                     type="password"
                     value={form.auth_password}
@@ -412,7 +411,7 @@ export function HomePage() {
                     autoComplete="new-password"
                   />
                 </Field>
-                <Field label="Custom headers" hint="One per line: Name: value">
+                <Field label="自定义请求头" hint="每行一个：名称: 值">
                   <Textarea
                     value={form.headers_text}
                     onChange={(event) => update("headers_text", event.target.value)}
@@ -421,38 +420,38 @@ export function HomePage() {
                     spellCheck={false}
                   />
                 </Field>
-                <div className="sm:col-span-2 flex items-center justify-between rounded-xl border border-amber-400/15 bg-amber-400/[0.04] px-4 py-3">
+                <div className="sm:col-span-2 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                   <div>
-                    <div className="text-xs font-medium text-amber-100">Allow object overwrite</div>
-                    <p className="mt-0.5 text-[11px] text-amber-200/50">
-                      Off by default. Retries of the same task may replace its own partial objects.
+                    <div className="text-xs font-medium text-amber-800">允许覆盖已有对象</div>
+                    <p className="mt-0.5 text-[11px] text-amber-700/70">
+                      默认关闭。同名任务重试时可以替换自己产生的未完成对象。
                     </p>
                   </div>
                   <Switch
                     checked={form.allow_overwrite}
                     onCheckedChange={(value) => update("allow_overwrite", value)}
-                    label="Allow overwrite"
+                    label="允许覆盖"
                   />
                 </div>
               </div>
             ) : null}
 
             {configs && configs.length === 0 ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.05] px-4 py-3 text-xs text-amber-100">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
                 <span className="inline-flex items-center gap-2">
                   <ServerCog className="h-4 w-4" />
-                  No S3 configuration yet. Add R2, MinIO or AWS S3 credentials in Settings.
+                  尚未配置 S3。请先在设置中添加 R2、MinIO 或 AWS S3 凭据。
                 </span>
-                <Link to="/settings" className="font-medium text-amber-200 underline-offset-4 hover:underline">
-                  Open settings
+                <Link to="/settings" className="font-medium text-amber-700 underline-offset-4 hover:underline">
+                  前往设置
                 </Link>
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
               <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400/70" />
-                Private IPs and metadata endpoints are blocked on every redirect.
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600/80" />
+                每次重定向都会拦截私有 IP 与云元数据地址。
               </div>
               <Button
                 type="submit"
@@ -465,7 +464,7 @@ export function HomePage() {
                 ) : (
                   <ArrowUpFromLine className="h-4 w-4" />
                 )}
-                {create.isPending ? "Starting…" : "Start transfer"}
+                {create.isPending ? "正在启动…" : "开始传输"}
                 {!create.isPending ? <ArrowRight className="h-4 w-4" /> : null}
               </Button>
             </div>
@@ -474,27 +473,27 @@ export function HomePage() {
 
         <div className="space-y-5">
           <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-              <Wand2 className="h-4 w-4 text-cyan-300" />
-              Transfer pipeline
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Wand2 className="h-4 w-4 text-cyan-700" />
+              传输流水线
             </div>
             <div className="mt-4 space-y-4">
               <PipelineStep
                 icon={Cloud}
                 title="HTTP / HTTPS"
-                detail="Reqwest stream → fixed buffer → bounded queue. Zero local file."
+                detail="Reqwest 流 → 固定缓冲区 → 有界队列，完全不落盘。"
                 tone="cyan"
               />
               <PipelineStep
                 icon={FolderTree}
-                title="MEGA share"
-                detail="Official mega-get → task-scoped temp dir → async file stream."
+                title="MEGA 分享"
+                detail="官方 mega-get → 任务独立临时目录 → 异步文件流。"
                 tone="violet"
               />
               <PipelineStep
                 icon={DatabaseZap}
                 title="S3 multipart"
-                detail="16 MiB parts, bounded concurrency, aborts on cancel/failure."
+                detail="16 MiB 分片、有界并发，取消或失败时自动中止。"
                 tone="emerald"
               />
             </div>
@@ -502,67 +501,67 @@ export function HomePage() {
 
           <Card className="p-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <Gauge className="h-4 w-4 text-cyan-300" />
-                Runtime
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <Gauge className="h-4 w-4 text-cyan-700" />
+                运行状态
               </div>
-              <Link to="/settings" className="text-[11px] text-cyan-300 hover:text-cyan-200">
-                Configure
+              <Link to="/settings" className="text-[11px] text-cyan-700 hover:text-cyan-700">
+                配置
               </Link>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <RuntimeStat label="HTTP slots" value={system?.settings.max_http_tasks ?? "—"} />
-              <RuntimeStat label="MEGA slots" value={system?.settings.max_mega_tasks ?? "—"} />
+              <RuntimeStat label="HTTP 槽位" value={system?.settings.max_http_tasks ?? "—"} />
+              <RuntimeStat label="MEGA 槽位" value={system?.settings.max_mega_tasks ?? "—"} />
               <RuntimeStat
-                label="Part size"
+                label="分片大小"
                 value={system ? formatBytes(system.settings.part_size_bytes, 0) : "—"}
               />
-              <RuntimeStat label="Upload lanes" value={system?.settings.upload_concurrency ?? "—"} />
+              <RuntimeStat label="上传并发" value={system?.settings.upload_concurrency ?? "—"} />
             </div>
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2.5 text-[11px]">
-              <span className="text-slate-500">MEGAcmd server</span>
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px]">
+              <span className="text-slate-500">MEGAcmd 服务</span>
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5",
-                  system?.mega.server_running ? "text-emerald-300" : "text-slate-500",
+                  system?.mega.server_running ? "text-emerald-700" : "text-slate-500",
                 )}
               >
                 <span
                   className={cn(
                     "h-1.5 w-1.5 rounded-full",
-                    system?.mega.server_running ? "bg-emerald-400" : "bg-slate-600",
+                    system?.mega.server_running ? "bg-emerald-500" : "bg-slate-300",
                   )}
                 />
                 {system?.mega.server_running
                   ? system.mega.logged_in
-                    ? system.mega.account ?? "session active"
-                    : "public links ready"
-                  : "not running"}
+                    ? system.mega.account ?? "会话已激活"
+                    : "可用公共链接"
+                  : "未启动"}
               </span>
             </div>
           </Card>
 
           <Card className="p-5">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-slate-100">Recent activity</div>
-              <Link to="/tasks" className="text-[11px] text-cyan-300 hover:text-cyan-200">
-                View all
+              <div className="text-sm font-semibold text-slate-900">最近活动</div>
+              <Link to="/tasks" className="text-[11px] text-cyan-700 hover:text-cyan-700">
+                查看全部
               </Link>
             </div>
             <div className="mt-3 space-y-2">
               {recent.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-[11px] text-slate-500">
-                  No transfers yet. Your first task will appear here.
+                <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-[11px] text-slate-500">
+                  暂无传输记录，创建的任务会显示在这里。
                 </div>
               ) : (
                 recent.map((task) => (
                   <Link
                     key={task.id}
                     to={`/tasks/${task.id}`}
-                    className="block rounded-xl border border-white/[0.05] bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/[0.1] hover:bg-white/[0.04]"
+                    className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition-colors hover:border-slate-300 hover:bg-slate-100"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-xs text-slate-200">{task.filename}</span>
+                      <span className="truncate text-xs text-slate-800">{task.filename}</span>
                       <StatusBadge status={task.status} />
                     </div>
                     <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500">
@@ -597,9 +596,9 @@ function PipelineStep({
   tone: "cyan" | "violet" | "emerald";
 }) {
   const tones = {
-    cyan: "bg-cyan-400/10 text-cyan-300",
-    violet: "bg-violet-400/10 text-violet-300",
-    emerald: "bg-emerald-400/10 text-emerald-300",
+    cyan: "bg-cyan-50 text-cyan-700",
+    violet: "bg-violet-50 text-violet-700",
+    emerald: "bg-emerald-50 text-emerald-700",
   };
   return (
     <div className="flex gap-3">
@@ -607,7 +606,7 @@ function PipelineStep({
         <Icon className="h-4 w-4" />
       </div>
       <div>
-        <div className="text-xs font-medium text-slate-200">{title}</div>
+        <div className="text-xs font-medium text-slate-800">{title}</div>
         <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{detail}</p>
       </div>
     </div>
@@ -616,9 +615,9 @@ function PipelineStep({
 
 function RuntimeStat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-white/[0.05] bg-black/15 px-3 py-2">
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
       <div className="text-[10px] uppercase tracking-wider text-slate-600">{label}</div>
-      <div className="mt-0.5 font-mono text-slate-200">{value}</div>
+      <div className="mt-0.5 font-mono text-slate-800">{value}</div>
     </div>
   );
 }

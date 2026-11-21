@@ -30,23 +30,23 @@ export function formatDuration(seconds?: number | null): string {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) {
     return "—";
   }
-  if (seconds < 1) return "<1s";
+  if (seconds < 1) return "<1 秒";
   const total = Math.round(seconds);
   const days = Math.floor(total / 86400);
   const hours = Math.floor((total % 86400) / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m ${secs}s`;
-  return `${secs}s`;
+  if (days > 0) return `${days} 天 ${hours} 小时`;
+  if (hours > 0) return `${hours} 小时 ${minutes} 分`;
+  if (minutes > 0) return `${minutes} 分 ${secs} 秒`;
+  return `${secs} 秒`;
 }
 
 export function formatDate(value?: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -62,46 +62,46 @@ export function timeAgo(value?: string | null): string {
   if (Number.isNaN(timestamp)) return "—";
   const diff = Math.max(0, Date.now() - timestamp);
   const secs = Math.floor(diff / 1000);
-  if (secs < 60) return `${secs}s ago`;
+  if (secs < 60) return `${secs} 秒前`;
   const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins} 分钟前`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours} 小时前`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return `${days} 天前`;
 }
 
 export const statusLabel: Record<TaskStatus, string> = {
-  pending: "Queued",
-  running: "Running",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
+  pending: "排队中",
+  running: "进行中",
+  completed: "已完成",
+  failed: "失败",
+  cancelled: "已取消",
 };
 
 export const stageLabel: Record<TaskStage, string> = {
-  pending: "Pending",
-  downloading: "Downloading",
-  preparing_upload: "Preparing upload",
-  uploading: "Uploading",
-  finalizing: "Finalizing",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
+  pending: "等待中",
+  downloading: "下载中",
+  preparing_upload: "准备上传",
+  uploading: "上传中",
+  finalizing: "正在完成",
+  completed: "已完成",
+  failed: "失败",
+  cancelled: "已取消",
 };
 
 export function statusTone(status: TaskStatus) {
   switch (status) {
     case "running":
-      return "border-cyan-400/25 bg-cyan-400/10 text-cyan-200";
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
     case "completed":
-      return "border-emerald-400/25 bg-emerald-400/10 text-emerald-200";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
     case "failed":
-      return "border-rose-400/25 bg-rose-400/10 text-rose-200";
+      return "border-rose-200 bg-rose-50 text-rose-700";
     case "cancelled":
-      return "border-amber-400/25 bg-amber-400/10 text-amber-200";
+      return "border-amber-200 bg-amber-50 text-amber-700";
     default:
-      return "border-slate-400/20 bg-slate-400/10 text-slate-300";
+      return "border-slate-200 bg-slate-100 text-slate-700";
   }
 }
 

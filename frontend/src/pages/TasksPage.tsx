@@ -68,12 +68,12 @@ export function TasksPage() {
     <div className="space-y-6 animate-fade-up">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-cyan-300/70">
-            Transfer queue
+          <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-cyan-700/70">
+            传输队列
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Tasks</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Live progress from SSE with polling fallback. Cancel aborts the active multipart upload.
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">任务列表</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            SSE 实时推送进度，断线时自动轮询。取消会中止当前分片上传。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -83,12 +83,12 @@ export function TasksPage() {
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            Refresh
+            刷新
           </Button>
           <Link to="/">
             <Button size="md">
               <ArrowUpFromLine className="h-4 w-4" />
-              New transfer
+              新建任务
             </Button>
           </Link>
         </div>
@@ -97,14 +97,14 @@ export function TasksPage() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <SummaryTile
           active={filter === "all"}
-          label="All tasks"
+          label="全部任务"
           value={counts.all}
           icon={Timer}
           onClick={() => setFilter("all")}
         />
         <SummaryTile
           active={filter === "active"}
-          label="Active"
+          label="进行中"
           value={counts.active}
           icon={Loader2}
           tone="cyan"
@@ -113,7 +113,7 @@ export function TasksPage() {
         />
         <SummaryTile
           active={filter === "completed"}
-          label="Completed"
+          label="已完成"
           value={counts.completed}
           icon={CheckCircle2}
           tone="green"
@@ -121,7 +121,7 @@ export function TasksPage() {
         />
         <SummaryTile
           active={filter === "failed"}
-          label="Failed / cancelled"
+          label="失败 / 已取消"
           value={counts.failed}
           icon={XCircle}
           tone="red"
@@ -130,13 +130,13 @@ export function TasksPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1">
           {(
             [
-              ["all", "All", counts.all],
-              ["active", "Active", counts.active],
-              ["completed", "Completed", counts.completed],
-              ["failed", "Issues", counts.failed],
+              ["all", "全部", counts.all],
+              ["active", "进行中", counts.active],
+              ["completed", "已完成", counts.completed],
+              ["failed", "异常", counts.failed],
             ] as const
           ).map(([key, label, count]) => (
             <button
@@ -145,8 +145,8 @@ export function TasksPage() {
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 filter === key
-                  ? "bg-white/[0.08] text-slate-100 shadow-sm"
-                  : "text-slate-500 hover:text-slate-300",
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700",
               )}
             >
               {label}
@@ -159,7 +159,7 @@ export function TasksPage() {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name, id, bucket…"
+            placeholder="搜索文件名、ID、存储桶…"
             className="h-9 pl-9 text-xs"
           />
         </div>
@@ -170,26 +170,26 @@ export function TasksPage() {
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={index}
-              className="h-44 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.025]"
+              className="h-44 animate-pulse rounded-2xl border border-slate-200 bg-slate-50"
             />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="grid place-items-center rounded-2xl border border-dashed border-white/10 bg-white/[0.015] px-6 py-20 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/[0.07] bg-white/[0.03]">
+        <div className="grid place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-20 text-center">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-slate-200 bg-white">
             <CircleX className="h-6 w-6 text-slate-600" />
           </div>
-          <h2 className="mt-4 text-sm font-medium text-slate-200">
-            {tasks?.length ? "No tasks match this view" : "No transfers yet"}
+          <h2 className="mt-4 text-sm font-medium text-slate-800">
+            {tasks?.length ? "当前筛选条件下没有任务" : "暂无传输任务"}
           </h2>
           <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
             {tasks?.length
-              ? "Adjust the filter or search query."
-              : "Paste an HTTP or MEGA share link and choose an S3 destination to start."}
+              ? "请调整筛选条件或搜索关键词。"
+              : "粘贴 HTTP 或 MEGA 分享链接，并选择 S3 目标即可开始。"}
           </p>
           {!tasks?.length ? (
             <Link to="/" className="mt-5">
-              <Button size="sm">Start a transfer</Button>
+              <Button size="sm">开始新任务</Button>
             </Link>
           ) : null}
         </div>
@@ -229,10 +229,10 @@ function SummaryTile({
   pulse?: boolean;
 }) {
   const tones = {
-    default: "text-slate-400",
-    cyan: "text-cyan-300",
-    green: "text-emerald-300",
-    red: "text-rose-300",
+    default: "text-slate-600",
+    cyan: "text-cyan-700",
+    green: "text-emerald-700",
+    red: "text-rose-600",
   } as const;
   return (
     <button
@@ -240,15 +240,15 @@ function SummaryTile({
       className={cn(
         "flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
         active
-          ? "border-cyan-400/25 bg-cyan-400/[0.07]"
-          : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1] hover:bg-white/[0.04]",
+          ? "border-cyan-200 bg-cyan-50"
+          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100",
       )}
     >
-      <div className={cn("grid h-8 w-8 place-items-center rounded-lg bg-black/20", tones[tone])}>
+      <div className={cn("grid h-8 w-8 place-items-center rounded-lg bg-slate-50", tones[tone])}>
         <Icon className={cn("h-4 w-4", pulse && "animate-spin")} />
       </div>
       <div>
-        <div className="font-mono text-lg font-semibold text-slate-100">{value}</div>
+        <div className="font-mono text-lg font-semibold text-slate-900">{value}</div>
         <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
       </div>
     </button>

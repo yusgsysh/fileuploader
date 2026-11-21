@@ -28,12 +28,12 @@ export function TaskProgress({
     <div className={cn("space-y-3", compact && "space-y-2")}>
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
-          <span className="inline-flex items-center gap-1.5 text-slate-400">
-            <ArrowDownToLine className="h-3.5 w-3.5 text-cyan-400" />
-            Download
+          <span className="inline-flex items-center gap-1.5 text-slate-600">
+            <ArrowDownToLine className="h-3.5 w-3.5 text-cyan-600" />
+            下载
           </span>
-          <span className="flex items-center gap-2 font-mono text-slate-400">
-            <span className="text-slate-300">
+          <span className="flex items-center gap-2 font-mono text-slate-600">
+            <span className="text-slate-700">
               {download === null ? formatBytes(task.downloaded_bytes) : percentLabel(download)}
             </span>
             <span className="text-[10px] text-slate-500">
@@ -46,19 +46,19 @@ export function TaskProgress({
         ) : (
           <Progress
             value={progressValue(download)}
-            barClassName="from-cyan-400 to-sky-400"
+            barClassName="from-cyan-500 to-sky-500"
             className={cn(download === null && "opacity-40")}
           />
         )}
       </div>
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
-          <span className="inline-flex items-center gap-1.5 text-slate-400">
-            <ArrowUpFromLine className="h-3.5 w-3.5 text-emerald-400" />
-            Upload
+          <span className="inline-flex items-center gap-1.5 text-slate-600">
+            <ArrowUpFromLine className="h-3.5 w-3.5 text-emerald-600" />
+            上传
           </span>
-          <span className="flex items-center gap-2 font-mono text-slate-400">
-            <span className="text-slate-300">
+          <span className="flex items-center gap-2 font-mono text-slate-600">
+            <span className="text-slate-700">
               {upload === null ? formatBytes(task.uploaded_bytes) : percentLabel(upload)}
             </span>
             <span className="text-[10px] text-slate-500">
@@ -69,26 +69,26 @@ export function TaskProgress({
         {unknownUpload ? (
           <Progress
             indeterminate
-            barClassName="from-emerald-400 to-teal-400"
+            barClassName="from-emerald-500 to-teal-500"
           />
         ) : (
           <Progress
             value={progressValue(upload)}
-            barClassName="from-emerald-400 to-teal-400"
+            barClassName="from-emerald-500 to-teal-500"
             className={cn(upload === null && "opacity-40")}
           />
         )}
       </div>
       {!compact ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.05] pt-2 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-2 text-[11px] text-slate-500">
           <span>
-            {formatBytes(task.downloaded_bytes)} downloaded · {formatBytes(task.uploaded_bytes)}{" "}
-            uploaded
+            已下载 {formatBytes(task.downloaded_bytes)} · 已上传{" "}
+            {formatBytes(task.uploaded_bytes)}
           </span>
           <span>
-            {task.total_bytes ? `${formatBytes(task.total_bytes)} total` : "size unknown"}
+            {task.total_bytes ? `共 ${formatBytes(task.total_bytes)}` : "大小未知"}
             {task.progress.eta_secs !== null && task.progress.eta_secs !== undefined
-              ? ` · ETA ${formatDuration(task.progress.eta_secs)}`
+              ? ` · 剩余 ${formatDuration(task.progress.eta_secs)}`
               : ""}
           </span>
         </div>

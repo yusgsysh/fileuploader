@@ -6,7 +6,9 @@ use sqlx::{
 };
 use std::{str::FromStr, time::Duration};
 
-use crate::models::{AppSettings, S3ConfigRecord, TaskHistoryItem, TaskRecord, TaskStatus};
+use crate::models::{
+    AppSettings, AuthAccount, S3ConfigRecord, TaskHistoryItem, TaskRecord, TaskStatus,
+};
 
 #[derive(Clone)]
 pub struct Store {
@@ -16,6 +18,29 @@ pub struct Store {
 #[derive(Debug, FromRow)]
 struct SettingsRow {
     value: String,
+}
+
+#[derive(Debug, FromRow)]
+struct AuthAccountRow {
+    username: String,
+    password_hash: String,
+    salt: String,
+    iterations: i64,
+    created_at: String,
+    updated_at: String,
+}
+
+impl From<AuthAccountRow> for AuthAccount {
+    fn from(row: AuthAccountRow) -> Self {
+        Self {
+            username: row.username,
+            password_hash: row.password_hash,
+            salt: row.salt,
+            iterations: row.iterations,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        }
+    }
 }
 
 #[derive(Debug, FromRow)]
@@ -184,6 +209,17 @@ impl Store {
             )
             "#,
             r#"
+            CREATE TABLE IF NOT EXISTS auth_account (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                username TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                iterations INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            "#,
+            r#"
             CREATE TABLE IF NOT EXISTS s3_configs (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -289,6 +325,66 @@ impl Store {
              ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
         )
         .bind(value)
+        .bind(now())
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Authentication
+    // -----------------------------------------------------------------------
+
+    pub async fn get_auth_account(&self) -> Result<Option<AuthAccount>> {
+        let row = sqlx::query_as::<_, AuthAccountRow>(
+            "SELECT username, password_hash, salt, iterations, created_at, updated_at
+             FROM auth_account WHERE id = 1",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.map(Into::into))
+    }
+
+    pub async fn create_auth_account(
+        &self,
+        username: &str,
+        password_hash: &str,
+        salt: &str,
+        iterations: i64,
+    ) -> Result<()> {
+        let timestamp = now();
+        sqlx::query(
+            "INSERT INTO auth_account
+             (id, username, password_hash, salt, iterations, created_at, updated_at)
+             VALUES (1, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(username)
+        .bind(password_hash)
+        .bind(salt)
+        .bind(iterations)
+        .bind(&timestamp)
+        .bind(&timestamp)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn update_auth_password(
+        &self,
+        username: &str,
+        password_hash: &str,
+        salt: &str,
+        iterations: i64,
+    ) -> Result<()> {
+        sqlx::query(
+            "UPDATE auth_account
+             SET username = ?, password_hash = ?, salt = ?, iterations = ?, updated_at = ?
+             WHERE id = 1",
+        )
+        .bind(username)
+        .bind(password_hash)
+        .bind(salt)
+        .bind(iterations)
         .bind(now())
         .execute(&self.pool)
         .await?;

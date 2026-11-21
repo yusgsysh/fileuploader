@@ -3,6 +3,7 @@ use std::{sync::Arc, time::Instant};
 use tokio::sync::{broadcast, RwLock};
 
 use crate::{
+    auth::SessionStore,
     config::AppConfig,
     db::Store,
     models::{AppSettings, ServerEvent},
@@ -13,6 +14,7 @@ use crate::{
 pub struct AppState {
     pub config: Arc<AppConfig>,
     pub db: Store,
+    pub sessions: Arc<SessionStore>,
     pub settings: Arc<RwLock<AppSettings>>,
     pub s3: Arc<S3Service>,
     pub mega: Arc<MegaService>,

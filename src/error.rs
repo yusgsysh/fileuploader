@@ -22,6 +22,8 @@ pub enum AppError {
     #[error("{0}")]
     BadRequest(String),
     #[error("{0}")]
+    Unauthorized(String),
+    #[error("{0}")]
     NotFound(String),
     #[error("{0}")]
     Conflict(String),
@@ -57,6 +59,7 @@ impl AppError {
     fn status_and_code(&self) -> (StatusCode, &'static str) {
         match self {
             Self::BadRequest(_) => (StatusCode::BAD_REQUEST, "bad_request"),
+            Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "unauthorized"),
             Self::NotFound(_) => (StatusCode::NOT_FOUND, "not_found"),
             Self::Conflict(_) => (StatusCode::CONFLICT, "conflict"),
             Self::TooManyRequests(_) => (StatusCode::TOO_MANY_REQUESTS, "too_many_tasks"),

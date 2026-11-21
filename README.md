@@ -18,7 +18,8 @@
 - **MEGA 临时目录**：每任务独立 `/app/tmp/mega/<task-id>/`，成功后自动删除；上传失败保留以便重试。
 - **任务系统**：SQLite 持久化、全局/来源并发限制、取消、重试、历史记录、重启后中断标记。
 - **实时进度**：SSE 推送下载/上传字节、速度、百分比、ETA、阶段、Part 状态、MEGA 临时目录信息。
-- **Web UI**：React + TypeScript + Vite + Tailwind，包含新建任务、任务列表、任务详情、设置。
+- **Web UI**：React + TypeScript + Vite + Tailwind，中文界面，包含登录页、首次初始化、新建任务、任务列表、任务详情与设置。
+- **登录认证**：首次启动设置管理员账号密码，PBKDF2 加盐哈希存储，Session Cookie 登录，支持在设置页修改密码。
 - **安全**：SSRF 防护（重定向逐跳检查、DNS 解析时过滤、禁止 localhost/私有网段/云元数据）、路径穿越防护、S3 Secret 只写不读、MEGA 分享密钥不写入日志。
 - **Docker**：多阶段构建、官方 MEGAcmd 包、非 root、持久化 SQLite 与 MEGA 会话、健康检查、资源限制。
 
@@ -408,8 +409,8 @@ curl http://127.0.0.1:8080/healthz
 | `STATIC_DIR` | `./frontend/dist` | 前端构建产物 |
 | `LOG_FORMAT` | `pretty` | `pretty` / `json` |
 | `SEED_DEFAULT_S3` | `true` | 是否尝试从环境变量写入首个 S3 配置 |
-| `APP_BASIC_AUTH_USERNAME` | — | Web UI/API Basic Auth 用户名，需与密码同时设置 |
-| `APP_BASIC_AUTH_PASSWORD` | — | Web UI/API Basic Auth 密码，需与用户名同时设置 |
+| `APP_BASIC_AUTH_USERNAME` | — | 可选：登录页之外的 Basic Auth 额外防护用户名 |
+| `APP_BASIC_AUTH_PASSWORD` | — | 可选：Basic Auth 额外防护密码，需与用户名同时设置 |
 | `S3_*` | — | 首次启动 S3 配置与环境凭据 |
 | `MEGA_HOME` | `./data/mega-home` | MEGAcmd HOME |
 | `MEGA_TEMP_DIR` | `./tmp/mega` | 临时目录根 |
@@ -494,27 +495,35 @@ SSE 事件：
 
 ---
 
-## 访问认证（HTTP Basic Auth）
+## 访问认证（登录页）
 
-Web UI 和 REST/SSE API 支持可选的 HTTP Basic Auth。未设置用户名/密码时保持原来的无认证模式。
+应用内置登录页，首次启动后访问首页会进入**初始化管理员账号**页面，设置用户名和密码后即可进入控制台。
 
-### Docker Compose / 环境变量
+### 首次初始化
 
-在 `.env` 中设置（两者必须同时存在）：
+1. 打开 `http://<host>:8080/`。
+2. 在初始化页面填写管理员用户名和密码（至少 8 个字符）。
+3. 提交后自动登录，后续访问使用登录页。
+
+> 初始化页面在账号创建前对访问者开放。首次部署后请尽快完成初始化，或先通过防火墙/反向代理限制访问来源。
+
+账号信息保存在 SQLite 的 `auth_account` 表中：
+
+- 密码使用 **PBKDF2-HMAC-SHA256（210,000 次迭代、随机盐）** 哈希后存储，不保存明文。
+- 登录状态保存在内存中的随机 Session Token 中，通过 `HttpOnly`、`SameSite=Lax` Cookie 传递，有效期 7 天。
+- 会话只存在内存中，服务重启后需要重新登录。
+- 设置页的「账号」标签可以修改密码；修改后其他设备上的会话会立即失效。
+
+### 可选：HTTP Basic Auth 额外防护
+
+原有的 Basic Auth 仍然可用，可作为反向代理之外的一层额外保护。设置后 Basic Auth 凭据也会被视为已登录，不会再次弹出应用登录页：
 
 ```dotenv
 APP_BASIC_AUTH_USERNAME=admin
 APP_BASIC_AUTH_PASSWORD=change-this-long-password
 ```
 
-```bash
-chmod 600 .env
-docker compose up -d
-```
-
-### systemd + Quadlet
-
-推荐直接运行脚本，自动生成随机密码、凭据文件和 Quadlet drop-in：
+两者必须同时设置。使用 systemd + Quadlet 时仍可通过脚本生成凭据文件：
 
 ```bash
 # rootless
@@ -533,29 +542,16 @@ sudo ./scripts/setup-basic-auth.sh --system
 - Rootful：`/etc/fileuploader-auth.env`
 - 对应 Quadlet 的 `fileuploader.container.d/10-auth.conf`
 
-凭据文件权限为 `0600`，不会写入仓库或镜像。
-
-也可以手动复制示例：
-
-```bash
-mkdir -p ~/.config/containers/systemd/fileuploader.container.d
-cp deploy/systemd/user/fileuploader.container.d/10-auth.conf.example    ~/.config/containers/systemd/fileuploader.container.d/10-auth.conf
-# 编辑 10-auth.conf 中 EnvironmentFile 指向的凭据文件
-systemctl --user daemon-reload
-systemctl --user restart fileuploader.service
-```
-
 ### 行为
 
-- 浏览器访问首页会收到 `401` 和 `WWW-Authenticate: Basic`，输入用户名密码后正常加载。
-- 同一来源的 `/api/*` 与 SSE 会复用浏览器缓存的 Basic 凭据。
+- `/api/*` 与 SSE 需要有效的登录会话或 Basic Auth 凭据，否则返回 `401`。
 - `/healthz` 不要求认证，确保 Docker/Podman/systemd 健康检查正常。
-- 密码只在启动时从环境变量读入内存，不写入 SQLite 或前端配置。
-- 使用常量时间比较，失败不记录用户名/密码。
-- Basic Auth 仅做访问控制，**不能替代 HTTPS**。公开网络必须通过 Caddy/Nginx/Traefik 等提供 TLS。
-- 这里的 Basic Auth 保护管理界面；单次 HTTP 下载任务的 Basic Auth 仍独立配置在任务表单中。
+- 静态资源与登录页保持公开，仅用于完成登录流程；业务 API 始终受保护。
+- 密码使用常量时间比较，失败不记录用户名/密码。
+- 登录认证仅做访问控制，**不能替代 HTTPS**。公开网络必须通过 Caddy/Nginx/Traefik 等提供 TLS。
+- 这里的认证保护管理界面；单次 HTTP 下载任务的 Basic Auth 仍独立配置在任务表单中。
 
-> 需要更强认证（多用户、会话、2FA、审计）时，建议在反向代理层接入 Authelia/Authentik 或 OAuth2 Proxy。
+> 需要多用户、2FA、审计等更强能力时，建议在反向代理层接入 Authelia/Authentik 或 OAuth2 Proxy。
 
 ---
 

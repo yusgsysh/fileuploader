@@ -21,11 +21,13 @@ import {
   ServerCog,
   Shield,
   Trash2,
+  UserRound,
   X,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError, queryKeys } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import type {
   AppSettings,
   MegaCheck,
@@ -46,7 +48,7 @@ import { Badge, Switch } from "@/components/ui/primitives";
 const MiB = 1024 * 1024;
 const GiB = 1024 * MiB;
 
-type Tab = "transfer" | "mega" | "s3";
+type Tab = "transfer" | "mega" | "s3" | "account";
 
 export function SettingsPage() {
   const [tab, setTab] = useState<Tab>("transfer");
@@ -55,27 +57,27 @@ export function SettingsPage() {
     <div className="space-y-6 animate-fade-up">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-cyan-300/70">
-            System configuration
+          <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-cyan-700/70">
+            系统配置
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Settings</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Transfer limits, MEGAcmd paths and S3-compatible destinations. Secrets are never
-            returned by the API.
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">设置</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            管理传输限制、MEGAcmd 路径与 S3 兼容存储目标。密钥类字段不会通过 API 返回。
           </p>
         </div>
         <Badge tone="cyan" className="px-3 py-1">
           <Shield className="h-3 w-3" />
-          server-side credentials
+          凭据仅保存在服务端
         </Badge>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
+      <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1">
         {(
           [
-            ["transfer", "Transfer engine", Gauge],
+            ["transfer", "传输引擎", Gauge],
             ["mega", "MEGA / MEGAcmd", Cloud],
-            ["s3", "S3 & R2", Database],
+            ["s3", "S3 与 R2", Database],
+            ["account", "账号", UserRound],
           ] as const
         ).map(([key, label, Icon]) => (
           <button
@@ -84,8 +86,8 @@ export function SettingsPage() {
             className={cn(
               "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition-colors",
               tab === key
-                ? "bg-white/[0.08] text-slate-100 shadow-sm"
-                : "text-slate-500 hover:text-slate-300",
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700",
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -97,6 +99,7 @@ export function SettingsPage() {
       {tab === "transfer" ? <TransferSettings state={settingsState} /> : null}
       {tab === "mega" ? <MegaSettings state={settingsState} /> : null}
       {tab === "s3" ? <S3Settings /> : null}
+      {tab === "account" ? <AccountSettings /> : null}
     </div>
   );
 }
@@ -116,11 +119,11 @@ function useSettings() {
       setSettings(value);
       queryClient.setQueryData(queryKeys.settings, value);
       void queryClient.invalidateQueries({ queryKey: queryKeys.system });
-      toast.success("Settings saved");
+      toast.success("设置已保存");
     },
     onError: (error) =>
-      toast.error("Could not save settings", {
-        description: error instanceof ApiError ? error.message : "Request failed",
+      toast.error("保存设置失败", {
+        description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
       }),
   });
 
@@ -142,122 +145,122 @@ function TransferSettings({ state }: { state: SettingsState }) {
       <div className="space-y-5 pb-28">
         <SettingsSection
           icon={Boxes}
-          title="Multipart upload"
-          description="Part size and upload lanes define memory pressure and request parallelism."
+          title="分片上传"
+          description="分片大小与上传并发共同决定内存占用和请求并行度。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
-              label="Part size"
+              label="分片大小"
               suffix="MiB"
               value={settings.part_size_bytes / MiB}
               min={5}
               max={5120}
               step={1}
               onChange={(value) => update("part_size_bytes", Math.round(value * MiB))}
-              hint="S3 minimum is 5 MiB. 16 MiB is a balanced default."
+              hint="S3 最小为 5 MiB，16 MiB 是较均衡的默认值。"
             />
             <NumberField
-              label="Upload concurrency"
+              label="上传并发数"
               value={settings.upload_concurrency}
               min={1}
               max={16}
               onChange={(value) => update("upload_concurrency", value)}
-              hint="Maximum in-flight UploadPart requests per task."
+              hint="每个任务同时进行的 UploadPart 请求上限。"
             />
             <NumberField
-              label="Maximum pending parts"
+              label="最大待上传分片数"
               value={settings.max_pending_parts}
               min={1}
               max={32}
               onChange={(value) => update("max_pending_parts", value)}
-              hint="Bounded queue between downloader and uploader."
+              hint="下载器与上传器之间的有界队列长度。"
             />
             <NumberField
-              label="HTTP buffer"
+              label="HTTP 缓冲区"
               suffix="KiB"
               value={settings.http_buffer_bytes / 1024}
               min={64}
               max={16384}
               step={64}
               onChange={(value) => update("http_buffer_bytes", Math.round(value * 1024))}
-              hint="Chunk processing window for the HTTP stream."
+              hint="HTTP 数据流的单次处理窗口大小。"
             />
           </div>
-          <div className="rounded-xl border border-cyan-400/10 bg-cyan-400/[0.035] px-4 py-3 text-[11px] leading-relaxed text-cyan-100/60">
-            Approximate worst-case streaming buffer:{" "}
-            <span className="font-mono text-cyan-200">
+          <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-[11px] leading-relaxed text-cyan-800/70">
+            预估最坏情况下的流式缓冲占用：{" "}
+            <span className="font-mono text-cyan-700">
               {formatBytes(
                 settings.part_size_bytes *
                   (settings.max_pending_parts + settings.upload_concurrency + 2),
               )}
             </span>{" "}
-            plus SDK/TLS overhead. Memory is bounded regardless of file size.
+            外加 SDK/TLS 开销。无论文件多大，内存占用都有上界。
           </div>
         </SettingsSection>
 
         <SettingsSection
           icon={Gauge}
-          title="Scheduling & resilience"
-          description="Concurrency gates, retry budgets and timeout guardrails."
+          title="调度与容错"
+          description="并发闸门、重试预算与超时保护。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
-              label="HTTP tasks"
+              label="HTTP 任务并发"
               value={settings.max_http_tasks}
               min={1}
               max={32}
               onChange={(value) => update("max_http_tasks", value)}
             />
             <NumberField
-              label="MEGA tasks"
+              label="MEGA 任务并发"
               value={settings.max_mega_tasks}
               min={1}
               max={16}
               onChange={(value) => update("max_mega_tasks", value)}
             />
             <NumberField
-              label="Queued task limit"
+              label="排队任务上限"
               value={settings.max_queued_tasks}
               min={1}
               max={1000}
               onChange={(value) => update("max_queued_tasks", value)}
-              hint="New tasks are rejected when the queue is full."
+              hint="队列满后会拒绝创建新任务。"
             />
             <NumberField
-              label="Retry attempts"
+              label="重试次数"
               value={settings.max_retries}
               min={0}
               max={10}
               onChange={(value) => update("max_retries", value)}
             />
             <NumberField
-              label="HTTP timeout"
-              suffix="sec"
+              label="HTTP 超时"
+              suffix="秒"
               value={settings.http_timeout_secs}
               min={1}
               max={3600}
               onChange={(value) => update("http_timeout_secs", value)}
-              hint="Connect and per-chunk idle timeout."
+              hint="连接及单次数据块的空闲超时。"
             />
             <NumberField
-              label="Maximum redirects"
+              label="最大重定向次数"
               value={settings.max_redirects}
               min={0}
               max={20}
               onChange={(value) => update("max_redirects", value)}
             />
             <NumberField
-              label="Maximum file size"
+              label="最大文件大小"
               suffix="GiB"
               value={settings.max_file_bytes / GiB}
               min={0}
               step={0.5}
               onChange={(value) => update("max_file_bytes", Math.round(value * GiB))}
-              hint="0 disables the limit. Applies to HTTP and MEGA totals."
+              hint="0 表示不限制，对 HTTP 与 MEGA 总量均生效。"
             />
             <NumberField
-              label="Task runtime limit"
-              suffix="hours"
+              label="任务最长运行时间"
+              suffix="小时"
               value={settings.task_timeout_secs / 3600}
               min={1}
               max={720}
@@ -273,31 +276,30 @@ function TransferSettings({ state }: { state: SettingsState }) {
       <aside className="space-y-5">
         <InfoCard
           icon={Cpu}
-          title="Backpressure model"
+          title="背压模型"
           items={[
-            "HTTP stream → fixed part buffer",
-            "Bounded mpsc queue (pending parts)",
-            "Finite UploadPart worker lanes",
-            "Multipart abort on failure/cancel",
+            "HTTP 流 → 固定分片缓冲",
+            "有界 mpsc 队列（待上传分片）",
+            "固定数量的 UploadPart 工作线程",
+            "失败或取消时中止分片上传",
           ]}
         />
         <InfoCard
           icon={HardDrive}
-          title="Memory envelope"
+          title="内存占用"
           items={[
-            `Part buffer: ${formatBytes(settings.part_size_bytes)}`,
-            `Pending queue: ${settings.max_pending_parts} parts`,
-            `Upload lanes: ${settings.upload_concurrency}`,
-            `HTTP concurrency: ${settings.max_http_tasks} tasks`,
+            `分片缓冲：${formatBytes(settings.part_size_bytes)}`,
+            `待上传队列：${settings.max_pending_parts} 个分片`,
+            `上传并发：${settings.upload_concurrency}`,
+            `HTTP 并发：${settings.max_http_tasks} 个任务`,
           ]}
         />
-        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] p-4 text-[11px] leading-relaxed text-amber-100/70">
-          <div className="mb-1 flex items-center gap-2 font-medium text-amber-200">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[11px] leading-relaxed text-amber-800/80">
+          <div className="mb-1 flex items-center gap-2 font-medium text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5" />
-            Changing limits
+            调整限制
           </div>
-          New values apply to newly scheduled work immediately. Running transfers keep their
-          existing part size for the current attempt.
+          新值会立即作用于后续调度的任务；正在运行的传输在本次尝试中继续使用原有分片大小。
         </div>
       </aside>
     </div>
@@ -319,13 +321,13 @@ function MegaSettings({ state }: { state: SettingsState }) {
     onSuccess: (result) => {
       setChecks(result.checks);
       toast[result.ok ? "success" : "warning"](
-        result.ok ? "MEGAcmd checks passed" : "MEGAcmd needs attention",
+        result.ok ? "MEGAcmd 检查通过" : "MEGAcmd 存在问题",
       );
       void queryClient.invalidateQueries({ queryKey: ["mega-status"] });
     },
     onError: (error) =>
-      toast.error("MEGA test failed", {
-        description: error instanceof ApiError ? error.message : "Request failed",
+      toast.error("MEGA 检查失败", {
+        description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
       }),
   });
 
@@ -336,39 +338,39 @@ function MegaSettings({ state }: { state: SettingsState }) {
       <div className="space-y-5 pb-28">
         <SettingsSection
           icon={ServerCog}
-          title="MEGAcmd paths"
-          description="Use official MEGAcmd binaries. Commands are executed without a shell."
+          title="MEGAcmd 路径"
+          description="请使用官方 MEGAcmd 可执行文件，命令不会经过 Shell 执行。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="mega-get path" hint="Absolute path or binary on PATH.">
+            <Field label="mega-get 路径" hint="绝对路径，或 PATH 中的可执行文件名。">
               <Input
                 value={settings.mega_get_path}
                 onChange={(event) => update("mega_get_path", event.target.value)}
                 spellCheck={false}
               />
             </Field>
-            <Field label="MEGAcmd server path">
+            <Field label="MEGAcmd 服务路径">
               <Input
                 value={settings.mega_server_path}
                 onChange={(event) => update("mega_server_path", event.target.value)}
                 spellCheck={false}
               />
             </Field>
-            <Field label="mega-whoami path" hint="Used for session and server checks.">
+            <Field label="mega-whoami 路径" hint="用于检查登录会话和服务状态。">
               <Input
                 value={settings.mega_whoami_path}
                 onChange={(event) => update("mega_whoami_path", event.target.value)}
                 spellCheck={false}
               />
             </Field>
-            <Field label="MEGAcmd HOME" hint="Persisted session lives under HOME/.megaCmd.">
+            <Field label="MEGAcmd HOME" hint="持久化会话保存在 HOME/.megaCmd 下。">
               <Input
                 value={settings.mega_home}
                 onChange={(event) => update("mega_home", event.target.value)}
                 spellCheck={false}
               />
             </Field>
-            <Field label="Temporary download directory" className="sm:col-span-2">
+            <Field label="临时下载目录" className="sm:col-span-2">
               <Input
                 value={settings.mega_temp_dir}
                 onChange={(event) => update("mega_temp_dir", event.target.value)}
@@ -376,11 +378,11 @@ function MegaSettings({ state }: { state: SettingsState }) {
               />
             </Field>
           </div>
-          <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/15 px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div>
-              <div className="text-xs font-medium text-slate-200">Auto-start MEGAcmd server</div>
+              <div className="text-xs font-medium text-slate-800">自动启动 MEGAcmd 服务</div>
               <p className="mt-0.5 text-[11px] text-slate-500">
-                Commands may start the server on demand. Docker can manage it independently.
+                需要时由命令自动拉起服务；使用 Docker 时也可以独立管理。
               </p>
             </div>
             <Switch
@@ -392,28 +394,28 @@ function MegaSettings({ state }: { state: SettingsState }) {
 
         <SettingsSection
           icon={HardDrive}
-          title="MEGA disk & concurrency"
-          description="Each task receives an isolated directory. Failed uploads keep files for retry."
+          title="MEGA 磁盘与并发"
+          description="每个任务使用独立目录；上传失败时保留文件以便重试。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
-              label="MEGA download concurrency"
+              label="MEGA 下载并发"
               value={settings.mega_max_downloads}
               min={1}
               max={16}
               onChange={(value) => update("mega_max_downloads", value)}
             />
             <NumberField
-              label="Per-task disk limit"
+              label="单任务磁盘上限"
               suffix="GiB"
               value={settings.mega_max_task_bytes / GiB}
               min={0}
               step={0.5}
               onChange={(value) => update("mega_max_task_bytes", Math.round(value * GiB))}
-              hint="0 disables the limit."
+              hint="0 表示不限制。"
             />
             <NumberField
-              label="Total temp storage limit"
+              label="临时空间总上限"
               suffix="GiB"
               value={settings.mega_temp_max_bytes / GiB}
               min={0}
@@ -421,18 +423,18 @@ function MegaSettings({ state }: { state: SettingsState }) {
               onChange={(value) => update("mega_temp_max_bytes", Math.round(value * GiB))}
             />
             <NumberField
-              label="Retention"
-              suffix="hours"
+              label="保留时长"
+              suffix="小时"
               value={settings.mega_retention_secs / 3600}
               min={0}
               max={2160}
               step={1}
               onChange={(value) => update("mega_retention_secs", Math.round(value * 3600))}
-              hint="Failed task temp files are cleaned after startup retention checks."
+              hint="启动时会按保留时长清理失败任务的临时文件。"
             />
             <NumberField
-              label="mega-get timeout"
-              suffix="hours"
+              label="mega-get 超时"
+              suffix="小时"
               value={settings.mega_download_timeout_secs / 3600}
               min={1}
               max={168}
@@ -450,9 +452,9 @@ function MegaSettings({ state }: { state: SettingsState }) {
       <aside className="space-y-5">
         <div className="panel p-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-              <CloudCog className="h-4 w-4 text-violet-300" />
-              MEGAcmd status
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <CloudCog className="h-4 w-4 text-violet-700" />
+              MEGAcmd 状态
             </div>
             <Button
               size="sm"
@@ -464,16 +466,16 @@ function MegaSettings({ state }: { state: SettingsState }) {
             </Button>
           </div>
           <div className="mt-4 space-y-3 text-xs">
-            <StatusLine label="Installed" ok={status?.installed} value={status?.version} />
-            <StatusLine label="Server" ok={status?.server_running} value={status?.message} />
+            <StatusLine label="已安装" ok={status?.installed} value={status?.version} />
+            <StatusLine label="服务" ok={status?.server_running} value={status?.message} />
             <StatusLine
-              label="Session"
+              label="会话"
               ok={status?.logged_in}
-              value={status?.logged_in ? status.account : "public links only"}
+              value={status?.logged_in ? status.account : "仅公共链接"}
               neutral={!status?.logged_in}
             />
-            <div className="rounded-xl border border-white/[0.06] bg-black/20 p-3 text-[10px] leading-relaxed text-slate-500">
-              <div className="font-mono text-slate-400">{settings.mega_get_path}</div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[10px] leading-relaxed text-slate-500">
+              <div className="font-mono text-slate-600">{settings.mega_get_path}</div>
               <div className="mt-1">HOME: {status?.home ?? settings.mega_home}</div>
             </div>
           </div>
@@ -489,20 +491,20 @@ function MegaSettings({ state }: { state: SettingsState }) {
             ) : (
               <CheckCircle2 className="h-3.5 w-3.5" />
             )}
-            Run diagnostics
+            运行诊断
           </Button>
           {checks ? (
             <div className="mt-4 space-y-2">
               {checks.map((check) => (
                 <div
                   key={check.name}
-                  className="rounded-lg border border-white/[0.05] bg-black/15 px-3 py-2"
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
                 >
-                  <div className="flex items-center gap-2 text-[11px] text-slate-300">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-700">
                     {check.ok ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                     ) : (
-                      <XCircle className="h-3.5 w-3.5 text-rose-400" />
+                      <XCircle className="h-3.5 w-3.5 text-rose-500" />
                     )}
                     {check.name}
                   </div>
@@ -513,16 +515,123 @@ function MegaSettings({ state }: { state: SettingsState }) {
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-violet-400/15 bg-violet-400/[0.04] p-4 text-[11px] leading-relaxed text-violet-100/65">
-          <div className="mb-1 flex items-center gap-2 font-medium text-violet-200">
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-[11px] leading-relaxed text-violet-800/80">
+          <div className="mb-1 flex items-center gap-2 font-medium text-violet-700">
             <KeyRound className="h-3.5 w-3.5" />
-            Login & sessions
+            登录与会话
           </div>
-          MEGA passwords are never stored by FileUploader. Log in once inside the container with{" "}
-          <code className="rounded bg-black/30 px-1 py-0.5 text-[10px] text-violet-100">
+          FileUploader 不会保存 MEGA 密码。请在容器内使用{" "}
+          <code className="rounded bg-slate-100 px-1 py-0.5 text-[10px] text-violet-800">
             mega-login
-          </code>
-          . The session persists under the MEGAcmd HOME volume.
+          </code>{" "}
+          登录一次，会话会保存在 MEGAcmd HOME 卷中。
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function AccountSettings() {
+  const { status } = useAuth();
+  const queryClient = useQueryClient();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+
+  const change = useMutation({
+    mutationFn: () => api.changePassword(current, next),
+    onSuccess: (value) => {
+      queryClient.setQueryData(queryKeys.auth, value);
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      toast.success("密码已更新", {
+        description: "其他设备上的登录状态已失效，需要重新登录。",
+      });
+    },
+    onError: (error) =>
+      toast.error("修改密码失败", {
+        description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
+      }),
+  });
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!current) {
+      toast.error("请输入当前密码");
+      return;
+    }
+    if (next.length < 8) {
+      toast.error("新密码至少需要 8 个字符");
+      return;
+    }
+    if (next !== confirm) {
+      toast.error("两次输入的新密码不一致");
+      return;
+    }
+    change.mutate();
+  };
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="space-y-5">
+        <SettingsSection
+          icon={UserRound}
+          title="管理员账号"
+          description="修改登录用户名下的密码。密码使用 PBKDF2 加盐哈希存储。"
+        >
+          <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+            当前账号：<span className="text-slate-800">{status?.username ?? "—"}</span>
+          </div>
+          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+            <Field label="当前密码" className="sm:col-span-2">
+              <Input
+                type="password"
+                value={current}
+                onChange={(event) => setCurrent(event.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </Field>
+            <Field label="新密码" hint="至少 8 个字符。">
+              <Input
+                type="password"
+                value={next}
+                onChange={(event) => setNext(event.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+            </Field>
+            <Field label="确认新密码">
+              <Input
+                type="password"
+                value={confirm}
+                onChange={(event) => setConfirm(event.target.value)}
+                placeholder="再次输入新密码"
+                autoComplete="new-password"
+              />
+            </Field>
+            <div className="sm:col-span-2 flex justify-end">
+              <Button type="submit" disabled={change.isPending}>
+                {change.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <KeyRound className="h-4 w-4" />
+                )}
+                更新密码
+              </Button>
+            </div>
+          </form>
+        </SettingsSection>
+      </div>
+
+      <aside className="space-y-5">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-[11px] leading-relaxed text-emerald-800/80">
+          <div className="mb-1 flex items-center gap-2 font-medium text-emerald-700">
+            <Shield className="h-3.5 w-3.5" />
+            会话安全
+          </div>
+          登录状态通过 HttpOnly Cookie 维持，有效期 7 天。修改密码后其他设备的会话会立即失效。
         </div>
       </aside>
     </div>
@@ -610,33 +719,33 @@ function S3Settings() {
     mutationFn: () =>
       form.id ? api.updateS3Config(form.id, toInput()) : api.createS3Config(toInput()),
     onSuccess: () => {
-      toast.success(form.id ? "S3 configuration updated" : "S3 configuration created");
+      toast.success(form.id ? "S3 配置已更新" : "S3 配置已创建");
       void queryClient.invalidateQueries({ queryKey: queryKeys.s3Configs });
       reset();
     },
     onError: (error) =>
-      toast.error("Could not save S3 configuration", {
-        description: error instanceof ApiError ? error.message : "Request failed",
+      toast.error("保存 S3 配置失败", {
+        description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
       }),
   });
 
   const remove = useMutation({
     mutationFn: api.deleteS3Config,
     onSuccess: () => {
-      toast.success("S3 configuration deleted");
+      toast.success("S3 配置已删除");
       void queryClient.invalidateQueries({ queryKey: queryKeys.s3Configs });
       if (form.id) reset();
     },
     onError: (error) =>
-      toast.error("Could not delete configuration", {
-        description: error instanceof ApiError ? error.message : "Request failed",
+      toast.error("删除配置失败", {
+        description: error instanceof ApiError ? error.message : "请求失败，请稍后再试",
       }),
   });
 
   const test = useMutation({
     mutationFn: () => {
       if (!form.id && !form.secret_key) {
-        throw new Error("Enter a secret key before testing a new configuration.");
+        throw new Error("测试新配置前请先填写 Secret Access Key。");
       }
       return api.testS3({
         config_id: form.id,
@@ -650,7 +759,7 @@ function S3Settings() {
     onError: (error) =>
       setTestResult({
         ok: false,
-        message: error instanceof Error ? error.message : "Connection test failed",
+        message: error instanceof Error ? error.message : "连接测试失败",
         latency_ms: 0,
       }),
   });
@@ -691,9 +800,9 @@ function S3Settings() {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold text-slate-100">Destinations</h2>
+              <h2 className="text-sm font-semibold text-slate-900">目标存储</h2>
               <p className="text-[11px] text-slate-500">
-                AWS S3, Cloudflare R2, MinIO, Backblaze B2, Wasabi and compatible APIs.
+                支持 AWS S3、Cloudflare R2、MinIO、Backblaze B2、Wasabi 及兼容 API。
               </p>
             </div>
             <Button
@@ -705,60 +814,60 @@ function S3Settings() {
               }}
             >
               <Plus className="h-3.5 w-3.5" />
-              New
+              新建
             </Button>
           </div>
 
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 2 }).map((_, index) => (
-                <div key={index} className="h-32 animate-pulse rounded-2xl bg-white/[0.03]" />
+                <div key={index} className="h-32 animate-pulse rounded-2xl bg-white" />
               ))}
             </div>
           ) : !configs?.length ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.015] px-5 py-12 text-center">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-12 text-center">
               <Cloud className="mx-auto h-8 w-8 text-slate-600" />
-              <div className="mt-3 text-sm text-slate-300">No S3 configuration yet</div>
+              <div className="mt-3 text-sm text-slate-700">尚未配置 S3</div>
               <p className="mt-1 text-xs text-slate-500">
-                Add Cloudflare R2 credentials or any S3-compatible endpoint on the right.
+                在右侧添加 Cloudflare R2 凭据或任意 S3 兼容端点。
               </p>
             </div>
           ) : (
             configs.map((config) => (
               <div
                 key={config.id}
-                className="rounded-2xl border border-white/[0.07] bg-card/60 p-4 transition-colors hover:border-white/[0.12]"
+                className="rounded-2xl border border-slate-200 bg-card/60 p-4 transition-colors hover:border-slate-300"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/[0.07] bg-white/[0.03]">
-                      <Cloud className="h-4 w-4 text-cyan-300" />
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white">
+                      <Cloud className="h-4 w-4 text-cyan-700" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-medium text-slate-100">
+                        <span className="truncate text-sm font-medium text-slate-900">
                           {config.name}
                         </span>
                         <Badge tone={config.secret_set ? "green" : "red"}>
-                          {config.secret_set ? "credentials set" : "missing secret"}
+                          {config.secret_set ? "凭据已配置" : "缺少密钥"}
                         </Badge>
-                        {config.path_style ? <Badge>path style</Badge> : null}
+                        {config.path_style ? <Badge>路径风格</Badge> : null}
                       </div>
                       <div className="mt-1 break-all font-mono text-[10px] text-slate-500">
-                        {config.endpoint || "AWS S3 default endpoint"}
+                        {config.endpoint || "AWS S3 默认端点"}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500">
-                        <span>region {config.region}</span>
-                        <span>bucket {config.bucket || "—"}</span>
-                        <span>prefix {config.default_prefix || "—"}</span>
-                        <span>updated {formatDate(config.updated_at)}</span>
+                        <span>区域 {config.region}</span>
+                        <span>存储桶 {config.bucket || "—"}</span>
+                        <span>前缀 {config.default_prefix || "—"}</span>
+                        <span>更新于 {formatDate(config.updated_at)}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button size="sm" variant="ghost" onClick={() => edit(config)}>
                       <Pencil className="h-3.5 w-3.5" />
-                      Edit
+                      编辑
                     </Button>
                     <Button
                       size="sm"
@@ -772,24 +881,24 @@ function S3Settings() {
                             setTestResult({
                               ok: false,
                               message:
-                                error instanceof Error ? error.message : "Connection test failed",
+                                error instanceof Error ? error.message : "连接测试失败",
                               latency_ms: 0,
                             }),
                           );
                       }}
-                      title="Test saved credentials"
+                      title="测试已保存的凭据"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-slate-500 hover:text-rose-300"
+                      className="text-slate-500 hover:text-rose-600"
                       disabled={remove.isPending}
                       onClick={() => {
                         if (
                           window.confirm(
-                            `Delete "${config.name}"? Configurations referenced by tasks cannot be deleted.`,
+                            `确定删除“${config.name}”吗？已被任务引用的配置无法删除。`,
                           )
                         ) {
                           remove.mutate(config.id);
@@ -810,15 +919,15 @@ function S3Settings() {
           <div className="panel p-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-slate-100">
-                  {form.id ? "Edit configuration" : "New configuration"}
+                <h2 className="text-sm font-semibold text-slate-900">
+                  {form.id ? "编辑配置" : "新建配置"}
                 </h2>
                 <p className="mt-0.5 text-[11px] text-slate-500">
-                  Secret keys are write-only from the UI.
+                  密钥类字段在界面中只写不读。
                 </p>
               </div>
               {form.id ? (
-                <Button variant="ghost" size="icon" onClick={reset} title="Cancel editing">
+                <Button variant="ghost" size="icon" onClick={reset} title="取消编辑">
                   <X className="h-4 w-4" />
                 </Button>
               ) : null}
@@ -831,7 +940,7 @@ function S3Settings() {
             </div>
 
             <div className="mt-4 space-y-3.5">
-              <Field label="Display name">
+              <Field label="显示名称">
                 <Input
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -839,8 +948,8 @@ function S3Settings() {
                 />
               </Field>
               <Field
-                label="Endpoint"
-                hint="R2: https://<account-id>.r2.cloudflarestorage.com · leave empty for AWS."
+                label="端点"
+                hint="R2：https://<account-id>.r2.cloudflarestorage.com；AWS 可留空。"
               >
                 <Input
                   value={form.endpoint}
@@ -850,7 +959,7 @@ function S3Settings() {
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Region" hint="R2 uses auto.">
+                <Field label="区域" hint="R2 使用 auto。">
                   <Input
                     value={form.region}
                     onChange={(event) => setForm({ ...form, region: event.target.value })}
@@ -858,7 +967,7 @@ function S3Settings() {
                     spellCheck={false}
                   />
                 </Field>
-                <Field label="Default bucket">
+                <Field label="默认存储桶">
                   <Input
                     value={form.bucket}
                     onChange={(event) => setForm({ ...form, bucket: event.target.value })}
@@ -866,7 +975,7 @@ function S3Settings() {
                   />
                 </Field>
               </div>
-              <Field label="Access key ID">
+              <Field label="Access Key ID">
                 <Input
                   value={form.access_key}
                   onChange={(event) => setForm({ ...form, access_key: event.target.value })}
@@ -876,22 +985,22 @@ function S3Settings() {
                 />
               </Field>
               <Field
-                label="Secret access key"
+                label="Secret Access Key"
                 hint={
                   form.id && form.secret_set
-                    ? "Leave blank to keep the existing secret."
-                    : "Stored server-side and never returned."
+                    ? "留空表示保留现有密钥。"
+                    : "仅保存在服务端，不会返回给前端。"
                 }
               >
                 <Input
                   type="password"
                   value={form.secret_key}
                   onChange={(event) => setForm({ ...form, secret_key: event.target.value })}
-                  placeholder={form.id && form.secret_set ? "•••••••• (unchanged)" : "Secret Access Key"}
+                  placeholder={form.id && form.secret_set ? "••••••••（未修改）" : "Secret Access Key"}
                   autoComplete="new-password"
                 />
               </Field>
-              <Field label="Default object prefix">
+              <Field label="默认对象前缀">
                 <Input
                   value={form.default_prefix}
                   onChange={(event) => setForm({ ...form, default_prefix: event.target.value })}
@@ -899,7 +1008,7 @@ function S3Settings() {
                   spellCheck={false}
                 />
               </Field>
-              <Field label="Custom metadata" hint="One per line: key: value">
+              <Field label="自定义元数据" hint="每行一个：键: 值">
                 <Textarea
                   value={form.metadata_text}
                   onChange={(event) => setForm({ ...form, metadata_text: event.target.value })}
@@ -910,12 +1019,12 @@ function S3Settings() {
               </Field>
               <div className="grid grid-cols-2 gap-2">
                 <ToggleRow
-                  label="Path-style URL"
+                  label="路径风格 URL"
                   checked={form.path_style}
                   onChange={(value) => setForm({ ...form, path_style: value })}
                 />
                 <ToggleRow
-                  label="TLS"
+                  label="TLS 加密"
                   checked={form.use_tls}
                   onChange={(value) => setForm({ ...form, use_tls: value })}
                 />
@@ -934,7 +1043,7 @@ function S3Settings() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                Test
+                测试
               </Button>
               <Button
                 className="flex-1"
@@ -946,19 +1055,17 @@ function S3Settings() {
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                {form.id ? "Update" : "Create"}
+                {form.id ? "更新" : "创建"}
               </Button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] p-4 text-[11px] leading-relaxed text-amber-100/70">
-            <div className="mb-1 flex items-center gap-2 font-medium text-amber-200">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[11px] leading-relaxed text-amber-800/80">
+            <div className="mb-1 flex items-center gap-2 font-medium text-amber-700">
               <AlertTriangle className="h-3.5 w-3.5" />
-              Cloudflare R2 specifics
+              Cloudflare R2 注意事项
             </div>
-            Use region <code className="rounded bg-black/25 px-1">auto</code>, enable path-style
-            access, and create an S3 API token from the R2 dashboard. The endpoint is not the public
-            r2.dev development URL.
+            区域请使用 <code className="rounded bg-slate-50 px-1">auto</code>，开启路径风格访问，并在 R2 控制台创建 S3 API Token。端点不是公开的 r2.dev 开发地址。
           </div>
         </div>
       </div>
@@ -972,17 +1079,17 @@ function TestResultCard({ result }: { result: S3TestResult }) {
       className={cn(
         "flex items-start gap-3 rounded-xl border px-4 py-3 text-xs",
         result.ok
-          ? "border-emerald-400/20 bg-emerald-400/[0.05] text-emerald-100"
-          : "border-rose-400/20 bg-rose-400/[0.05] text-rose-100",
+          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border-rose-200 bg-rose-50 text-rose-800",
       )}
     >
       {result.ok ? (
-        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
       ) : (
-        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
       )}
       <div>
-        <div className="font-medium">{result.ok ? "Connection successful" : "Connection failed"}</div>
+        <div className="font-medium">{result.ok ? "连接成功" : "连接失败"}</div>
         <div className="mt-0.5 break-words text-[11px] opacity-75">{result.message}</div>
         {result.ok ? (
           <div className="mt-1 font-mono text-[10px] opacity-60">{result.latency_ms} ms</div>
@@ -1006,11 +1113,11 @@ function SettingsSection({
   return (
     <section className="panel p-5 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.06] bg-white/[0.03]">
-          <Icon className="h-4 w-4 text-cyan-300" />
+        <div className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white">
+          <Icon className="h-4 w-4 text-cyan-700" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
           <p className="mt-0.5 text-[11px] text-slate-500">{description}</p>
         </div>
       </div>
@@ -1062,13 +1169,13 @@ function NumberField({
 
 function SaveBar({ pending, onClick }: { pending: boolean; onClick: () => void }) {
   return (
-    <div className="sticky bottom-4 z-20 flex items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-background/90 px-4 py-3 shadow-panel backdrop-blur-xl">
+    <div className="sticky bottom-4 z-20 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-background/90 px-4 py-3 shadow-panel backdrop-blur-xl">
       <div className="text-[11px] text-slate-500">
-        Values are validated by the server before they are persisted.
+        保存前会由服务端校验数值范围。
       </div>
       <Button onClick={onClick} disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Save changes
+        保存更改
       </Button>
     </div>
   );
@@ -1085,14 +1192,14 @@ function InfoCard({
 }) {
   return (
     <div className="panel p-5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-        <Icon className="h-4 w-4 text-cyan-300" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+        <Icon className="h-4 w-4 text-cyan-700" />
         {title}
       </div>
       <ul className="mt-3 space-y-2">
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2 text-[11px] text-slate-500">
-            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400/70" />
+            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600/80" />
             {item}
           </li>
         ))}
@@ -1111,8 +1218,8 @@ function ToggleRow({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2.5">
-      <span className="text-[11px] text-slate-400">{label}</span>
+    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+      <span className="text-[11px] text-slate-600">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} label={label} />
     </div>
   );
@@ -1128,9 +1235,9 @@ function PresetButton({
   tone: "amber" | "rose" | "cyan";
 }) {
   const tones = {
-    amber: "border-amber-400/20 bg-amber-400/[0.06] text-amber-200",
-    rose: "border-rose-400/20 bg-rose-400/[0.06] text-rose-200",
-    cyan: "border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-200",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+    cyan: "border-cyan-200 bg-cyan-50 text-cyan-700",
   };
   return (
     <button
@@ -1161,19 +1268,19 @@ function StatusLine({
         className={cn(
           "inline-flex max-w-[190px] items-center gap-1.5 text-right text-[11px]",
           neutral
-            ? "text-slate-400"
+            ? "text-slate-600"
             : ok
-              ? "text-emerald-300"
-              : "text-rose-300",
+              ? "text-emerald-700"
+              : "text-rose-600",
         )}
       >
         <span
           className={cn(
             "h-1.5 w-1.5 shrink-0 rounded-full",
-            neutral ? "bg-slate-500" : ok ? "bg-emerald-400" : "bg-rose-400",
+            neutral ? "bg-slate-400" : ok ? "bg-emerald-500" : "bg-rose-500",
           )}
         />
-        <span className="break-all">{value ?? (ok ? "ready" : "not available")}</span>
+        <span className="break-all">{value ?? (ok ? "已就绪" : "不可用")}</span>
       </span>
     </div>
   );
@@ -1182,8 +1289,8 @@ function StatusLine({
 function SettingsSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-64 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.025]" />
-      <div className="h-64 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.025]" />
+      <div className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
+      <div className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
     </div>
   );
 }

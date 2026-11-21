@@ -34,29 +34,29 @@ export function SpeedChart({ samples }: { samples: SpeedSample[] }) {
       <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
         <div className="flex items-center gap-4">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-3 rounded-full bg-cyan-400" /> Download
+            <span className="h-1.5 w-3 rounded-full bg-cyan-500" /> 下载
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-3 rounded-full bg-emerald-400" /> Upload
+            <span className="h-1.5 w-3 rounded-full bg-emerald-500" /> 上传
           </span>
         </div>
-        <span className="font-mono">peak {formatSpeed(max)}</span>
+        <span className="font-mono">峰值 {formatSpeed(max)}</span>
       </div>
-      <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-black/25">
+      <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white">
         {!data.length ? (
           <div className="grid h-[170px] place-items-center text-xs text-slate-600">
-            Waiting for transfer samples…
+            等待传输采样…
           </div>
         ) : (
           <svg viewBox={`0 0 ${width} ${height}`} className="h-[170px] w-full" preserveAspectRatio="none">
             <defs>
               <linearGradient id={`down-${id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.24" />
-                <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+                <stop offset="0%" stopColor="#0891b2" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#0891b2" stopOpacity="0" />
               </linearGradient>
               <linearGradient id={`up-${id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34d399" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+                <stop offset="0%" stopColor="#059669" stopOpacity="0.16" />
+                <stop offset="100%" stopColor="#059669" stopOpacity="0" />
               </linearGradient>
             </defs>
             {[0.25, 0.5, 0.75].map((ratio) => (
@@ -66,7 +66,7 @@ export function SpeedChart({ samples }: { samples: SpeedSample[] }) {
                 x2={width - padX}
                 y1={padY + ratio * (height - padY * 2)}
                 y2={padY + ratio * (height - padY * 2)}
-                stroke="rgba(148,163,184,0.08)"
+                stroke="rgba(100,116,139,0.16)"
                 strokeWidth="1"
               />
             ))}
@@ -75,7 +75,7 @@ export function SpeedChart({ samples }: { samples: SpeedSample[] }) {
             <polyline
               points={line("download")}
               fill="none"
-              stroke="#22d3ee"
+              stroke="#0891b2"
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -83,7 +83,7 @@ export function SpeedChart({ samples }: { samples: SpeedSample[] }) {
             <polyline
               points={line("upload")}
               fill="none"
-              stroke="#34d399"
+              stroke="#059669"
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"

@@ -9,7 +9,7 @@ export const Input = React.forwardRef<
     ref={ref}
     type={type}
     className={cn(
-      "flex h-11 w-full rounded-xl border border-white/[0.08] bg-black/20 px-3.5 text-sm text-foreground shadow-inner shadow-black/20 transition-colors placeholder:text-muted-foreground/60 focus:border-cyan-400/45 focus:outline-none focus:ring-2 focus:ring-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50",
+      "flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground/60 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}
     {...props}
@@ -24,7 +24,7 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      "flex min-h-[88px] w-full resize-y rounded-xl border border-white/[0.08] bg-black/20 px-3.5 py-3 text-sm text-foreground shadow-inner shadow-black/20 transition-colors placeholder:text-muted-foreground/60 focus:border-cyan-400/45 focus:outline-none focus:ring-2 focus:ring-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50",
+      "flex min-h-[88px] w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground/60 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}
     {...props}
@@ -39,7 +39,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "flex h-11 w-full appearance-none rounded-xl border border-white/[0.08] bg-black/20 px-3.5 text-sm text-foreground transition-colors focus:border-cyan-400/45 focus:outline-none focus:ring-2 focus:ring-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50",
+      "flex h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-foreground transition-colors focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}
     {...props}

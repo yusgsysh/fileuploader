@@ -9,12 +9,12 @@ export function Badge({
   tone?: "default" | "cyan" | "green" | "red" | "amber" | "violet";
 }) {
   const tones = {
-    default: "border-white/10 bg-white/[0.04] text-slate-300",
-    cyan: "border-cyan-400/25 bg-cyan-400/10 text-cyan-200",
-    green: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
-    red: "border-rose-400/25 bg-rose-400/10 text-rose-200",
-    amber: "border-amber-400/25 bg-amber-400/10 text-amber-200",
-    violet: "border-violet-400/25 bg-violet-400/10 text-violet-200",
+    default: "border-slate-200 bg-slate-100 text-slate-700",
+    cyan: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    red: "border-rose-200 bg-rose-50 text-rose-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
   } as const;
   return (
     <span
@@ -43,13 +43,13 @@ export function Progress({
   return (
     <div
       className={cn(
-        "relative h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]",
+        "relative h-1.5 w-full overflow-hidden rounded-full bg-slate-100",
         className,
       )}
     >
       <div
         className={cn(
-          "h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-400 transition-[width] duration-500",
+          "h-full rounded-full bg-gradient-to-r from-cyan-500 to-sky-500 transition-[width] duration-500",
           indeterminate && "shimmer w-1/2 animate-pulse-soft",
           barClassName,
         )}
@@ -79,8 +79,8 @@ export function Switch({
       disabled={disabled}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40",
-        checked ? "bg-cyan-400/80" : "bg-white/10",
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40",
+        checked ? "bg-cyan-600" : "bg-slate-200",
       )}
     >
       <span

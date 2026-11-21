@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod events;
 pub mod s3;
 pub mod settings;
@@ -14,6 +15,11 @@ use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/auth/status", get(auth::status))
+        .route("/auth/setup", post(auth::setup))
+        .route("/auth/login", post(auth::login))
+        .route("/auth/logout", post(auth::logout))
+        .route("/auth/password", post(auth::change_password))
         .route("/tasks", get(tasks::list_tasks).post(tasks::create_task))
         .route(
             "/tasks/{id}",

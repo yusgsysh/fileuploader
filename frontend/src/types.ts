@@ -221,3 +221,10 @@ export interface MegaTestResult {
   ok: boolean;
   checks: MegaCheck[];
 }
+
+export interface AuthStatus {
+  setup_required: boolean;
+  authenticated: boolean;
+  basic_auth?: boolean;
+  username?: string | null;
+}

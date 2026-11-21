@@ -141,6 +141,20 @@ impl TaskStage {
 }
 
 // ---------------------------------------------------------------------------
+// Authentication
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct AuthAccount {
+    pub username: String,
+    pub password_hash: String,
+    pub salt: String,
+    pub iterations: i64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
 
