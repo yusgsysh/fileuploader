@@ -79,6 +79,11 @@ ENV APP_HOST=0.0.0.0 \
     MEGA_AUTO_START_SERVER=true \
     RUST_LOG=info,aws_config=warn,aws_smithy_runtime=warn,hyper=warn
 
+LABEL org.opencontainers.image.title="FileUploader" \
+      org.opencontainers.image.description="Self-hosted streaming HTTP/MEGA downloader with S3 multipart upload" \
+      org.opencontainers.image.source="https://github.com/yusgsysh/fileuploader" \
+      org.opencontainers.image.licenses="MIT"
+
 USER app
 EXPOSE 8080
 

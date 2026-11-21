@@ -1,0 +1,10 @@
+target/
+frontend/node_modules/
+frontend/dist/
+data/
+tmp/
+.env
+.git/
+.gitignore
+*.log
+.DS_Store

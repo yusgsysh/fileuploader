@@ -275,6 +275,41 @@ cd frontend && npm run build
 
 ---
 
+## 本地 Podman 构建
+
+仓库同时提供 `Containerfile`（Podman/Buildah 约定）和 `Dockerfile`（GitHub Actions 使用），两者内容保持一致。
+
+```bash
+# 推荐：使用构建脚本
+./scripts/podman-build.sh
+
+# 等价命令
+podman build --layers -f Containerfile -t fileuploader:local .
+
+# 不缓存重建
+./scripts/podman-build.sh --no-cache
+
+# 构建完成后运行
+podman run --rm --name fileuploader \
+  -p 8080:8080 \
+  --env-file .env \
+  -v fileuploader-data:/app/data \
+  -v fileuploader-tmp:/app/tmp/mega \
+  fileuploader:local
+```
+
+本地命名卷：
+
+```bash
+podman volume create fileuploader-data
+podman volume create fileuploader-tmp
+```
+
+> Podman 使用 `.containerignore`；Docker/GitHub Actions 使用 `.dockerignore`。两者都排除了 `target/`、`node_modules/`、数据库和 `.env`。
+> 本地构建默认使用当前 CPU 架构；需要 arm64 时请使用原生 arm64 主机或 Podman 的跨架构配置。
+
+---
+
 ## 配置
 
 所有传输参数都可在 Web UI → Settings 修改。环境变量仅用于**首次启动**写入默认设置；之后以 SQLite 中的设置为准。
