@@ -33,7 +33,15 @@ RUN mkdir -p src \
     && cargo build --release --locked \
     && rm -rf src
 COPY src ./src
-RUN cargo build --release --locked
+# BuildKit keeps the build context's mtimes, which are older than the dummy
+# artifacts created above. Cargo then considers the crate fresh and leaves the
+# placeholder binary in place, producing an image that exits immediately.
+# Drop this crate's artifacts (dependencies stay cached), touch the sources, and
+# assert that the real binary was linked.
+RUN cargo clean -p fileuploader --release \
+    && find src -name '*.rs' -exec touch {} + \
+    && cargo build --release --locked \
+    && grep -aq "FileUploader is ready" target/release/fileuploader
 
 # ---------------------------------------------------------------------------
 # Runtime: Debian 12 + official MEGAcmd package repository
