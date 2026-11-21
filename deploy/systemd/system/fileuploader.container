@@ -1,0 +1,60 @@
+# Podman Quadlet unit for rootful systemd.
+# Install:
+#   sudo mkdir -p /etc/containers/systemd
+#   sudo cp deploy/systemd/system/fileuploader.container /etc/containers/systemd/
+#   sudo systemctl daemon-reload
+#   sudo systemctl start fileuploader.service
+#
+# The container image is public on GHCR. S3 credentials are configured in the
+# Web UI, not embedded here.
+
+[Unit]
+Description=FileUploader (HTTP/MEGA streaming to S3)
+Documentation=https://github.com/yusgsysh/fileuploader
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=fileuploader
+Image=ghcr.io/yusgsysh/fileuploader:latest
+Pull=newer
+AutoUpdate=registry
+
+PublishPort=8080:8080
+
+Volume=fileuploader-data:/app/data:U
+Volume=fileuploader-mega-tmp:/app/tmp/mega:U
+
+Environment=APP_HOST=0.0.0.0
+Environment=APP_PORT=8080
+Environment=DATA_DIR=/app/data
+Environment=DATABASE_URL=sqlite:///app/data/fileuploader.db
+Environment=STATIC_DIR=/app/static
+Environment=MEGA_HOME=/app/data/mega-home
+Environment=MEGA_TEMP_DIR=/app/tmp/mega
+Environment=MEGA_AUTO_START_SERVER=true
+Environment=SEED_DEFAULT_S3=false
+Environment=TZ=UTC
+Environment=RUST_LOG=info,aws_config=warn,aws_smithy_runtime=warn,hyper=warn
+
+HealthCmd=curl -fsS http://127.0.0.1:8080/healthz
+HealthInterval=20s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=25s
+
+NoNewPrivileges=true
+DropCapability=ALL
+PidsLimit=256
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+MemoryMax=1G
+CPUQuota=200%
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

@@ -310,6 +310,90 @@ podman volume create fileuploader-tmp
 
 ---
 
+## systemd + Podman Quadlet
+
+仓库包含可直接用于 systemd 的 Quadlet `.container` 文件，**不需要在本地构建镜像**，直接拉取公开镜像：
+
+- 无 root 用户（推荐）：[`deploy/systemd/user/fileuploader.container`](deploy/systemd/user/fileuploader.container)
+- root 系统服务：[`deploy/systemd/system/fileuploader.container`](deploy/systemd/system/fileuploader.container)
+
+镜像：
+
+```text
+ghcr.io/yusgsysh/fileuploader:latest
+```
+
+### Rootless 安装
+
+```bash
+mkdir -p ~/.config/containers/systemd
+cp deploy/systemd/user/fileuploader.container ~/.config/containers/systemd/
+systemctl --user daemon-reload
+systemctl --user start fileuploader.service
+systemctl --user status fileuploader.service
+
+# 开机/登录前也能启动
+loginctl enable-linger "$USER"
+```
+
+打开 `http://localhost:8080`。
+
+### Rootful 安装
+
+```bash
+sudo mkdir -p /etc/containers/systemd
+sudo cp deploy/systemd/system/fileuploader.container /etc/containers/systemd/
+sudo systemctl daemon-reload
+sudo systemctl start fileuploader.service
+sudo systemctl status fileuploader.service
+```
+
+### 自动更新
+
+Quadlet 已启用 `AutoUpdate=registry`。启用 Podman 自动更新定时器即可：
+
+```bash
+# rootless
+systemctl --user enable --now podman-auto-update.timer
+
+# rootful
+sudo systemctl enable --now podman-auto-update.timer
+```
+
+### 持久化
+
+Quadlet 创建并挂载：
+
+- `fileuploader-data` → `/app/data`：SQLite、MEGAcmd HOME、会话和服务日志
+- `fileuploader-mega-tmp` → `/app/tmp/mega`：MEGA 临时文件
+
+首次启动后，在 Web UI → Settings 配置 S3/R2，或通过 Rootless/Rootful drop-in 注入环境变量。S3 Secret 不要写进 `.container` 文件。
+
+### MEGA 登录
+
+```bash
+podman exec -it   -e HOME=/app/data/mega-home   fileuploader mega-login 'you@example.com' 'password'
+```
+
+MEGA 密码不写入 Quadlet、镜像或数据库。登录会话保存在 `fileuploader-data` 卷的 MEGAcmd HOME 中。
+
+### 查看日志与健康状态
+
+```bash
+# rootless
+journalctl --user -u fileuploader -f
+
+# rootful
+journalctl -u fileuploader -f
+
+podman healthcheck run fileuploader
+curl http://127.0.0.1:8080/healthz
+```
+
+> 当前公开发布的 `latest` 为 `linux/amd64`。如果你在 arm64 主机上部署，请先推送 `v*.*.*` tag 触发多架构构建，或手动运行工作流并设置 `multiarch=true`。
+
+---
+
 ## 配置
 
 所有传输参数都可在 Web UI → Settings 修改。环境变量仅用于**首次启动**写入默认设置；之后以 SQLite 中的设置为准。
