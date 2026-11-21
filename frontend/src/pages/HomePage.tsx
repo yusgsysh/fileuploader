@@ -119,8 +119,12 @@ export function HomePage() {
       toast.error("请填写存储桶名称");
       return;
     }
+    const url = form.url.trim();
     const input: CreateTaskInput = {
-      url: form.url.trim(),
+      url:
+        detected === "mega" && form.mega_password
+          ? `${url}#${form.mega_password}`
+          : url,
       source_type: "auto",
       s3_config_id: form.s3_config_id,
       bucket: form.bucket.trim(),
@@ -131,8 +135,6 @@ export function HomePage() {
       cookie: form.cookie.trim() || undefined,
       auth_username: form.auth_username.trim() || undefined,
       auth_password: form.auth_password || undefined,
-      mega_password:
-        detected === "mega" && form.mega_password ? form.mega_password : undefined,
       headers: parseHeadersJson(form.headers_text),
       allow_overwrite: form.allow_overwrite,
     };

@@ -482,7 +482,7 @@ GET    /healthz
 }
 ```
 
-可选的下载请求字段：`user_agent`、`referer`、`cookie`、`headers`（对象）、`auth_username`、`auth_password`、`mega_password`（MEGA 密码保护分享的密码，单独传递，不拼接进 URL）。
+可选的下载请求字段：`user_agent`、`referer`、`cookie`、`headers`（对象）、`auth_username`、`auth_password`。
 
 SSE 事件：
 

@@ -272,16 +272,6 @@ impl TaskManager {
                 return Err(AppError::bad_request("Cookie header is too long"));
             }
         }
-        if let Some(password) = request.mega_password.as_deref() {
-            if password.len() > 512 {
-                return Err(AppError::bad_request("MEGA share password is too long"));
-            }
-            if password.contains(['\0', '\n', '\r']) {
-                return Err(AppError::bad_request(
-                    "MEGA share password contains invalid characters",
-                ));
-            }
-        }
         if let Some(referer) = request.referer.as_deref() {
             if referer.len() > crate::security::MAX_URL_CHARS {
                 return Err(AppError::bad_request("Referer is too long"));
@@ -321,7 +311,6 @@ impl TaskManager {
                 .clone()
                 .filter(|v| !v.trim().is_empty()),
             auth_password: request.auth_password.clone().filter(|v| !v.is_empty()),
-            mega_password: request.mega_password.clone().filter(|v| !v.is_empty()),
             allow_overwrite: request.allow_overwrite,
             attempt: 1,
             created_at: timestamp.clone(),
@@ -941,7 +930,6 @@ impl TaskManager {
                 .download(
                     settings,
                     &record.url,
-                    record.mega_password.as_deref(),
                     &record.id,
                     progress.clone(),
                     token.child_token(),
