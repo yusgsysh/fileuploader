@@ -40,6 +40,8 @@ tempfile = "3"
 
 [profile.release]
 opt-level = 2
-lto = "thin"
-codegen-units = 1
+# Optimized for fast CI/Docker builds. The workload is I/O-bound, so full LTO
+# and single-codegen-unit compilation only add build time.
+lto = false
+codegen-units = 16
 strip = "symbols"

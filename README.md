@@ -493,8 +493,12 @@ docker stats fileuploader
 仓库包含 [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)：
 
 - push 到 `main` 或推送 `v*.*.*` tag 时自动构建并发布。
-- `workflow_dispatch` 可手动触发；PR 只构建 `linux/amd64`，不推送。
-- 正式发布构建 `linux/amd64` 与 `linux/arm64` 多架构镜像。
+- `main` 分支和 PR 默认只构建 `linux/amd64`，速度优先；PR 不推送。
+- `v*.*.*` tag 自动构建 `linux/amd64` + `linux/arm64` 多架构镜像。
+- `workflow_dispatch` 可手动选择是否同时构建 arm64。
+- Rust 依赖层独立缓存，源码变更时不再重新编译全部依赖。
+- Release profile 关闭 LTO、使用 16 个 codegen units，缩短 CI 编译时间。
+- 同一分支新推送会取消旧构建，避免排队浪费。
 - 使用 GitHub 内置 `GITHUB_TOKEN`（`packages: write`）登录 `ghcr.io`。
 - 使用 `gh api` 尝试把新建 GHCR 包切换为 public；无权限时只发出 warning，不阻断发布。
 - 生成 BuildKit SBOM 与 max provenance，使用 GitHub Actions 缓存。
@@ -511,8 +515,11 @@ ghcr.io/<github-owner>/<github-repository>:latest
 # 首次创建公开 GitHub 仓库并推送（使用 GitHub CLI）
 gh repo create yusgsysh/fileuploader --public --source=. --remote=origin --push
 
-# 手动触发镜像构建
-gh workflow run "Publish container image"
+# 手动触发镜像构建（仅 amd64，最快）
+gh workflow run "Publish container image" --ref main -f multiarch=false
+
+# 手动构建多架构镜像
+gh workflow run "Publish container image" --ref main -f multiarch=true
 
 # 查看运行
 gh run list --workflow "Publish container image"
@@ -537,6 +544,16 @@ GHCR 新建包默认可能是 private，即使源码仓库是 public。工作流
 - 工作流会优先使用该 secret 执行 `gh api` 可见性切换。
 
 > 发布镜像不需要 PAT；只有自动修改包可见性可能需要。
+
+### 构建速度建议
+
+1. **日常 push 保持 `linux/amd64` 单架构**：arm64 在 QEMU 下模拟编译 Rust 依赖，通常是主要耗时来源。
+2. **只在正式 tag 构建多架构**：`v1.2.3` 这类 tag 自动启用 arm64；日常 main 使用 amd64。
+3. **依赖层缓存**：Dockerfile 先构建占位 crate，再复制真实源码。`Cargo.toml` / `Cargo.lock` 不变时，GitHub Actions 会命中 Rust 依赖缓存。
+4. **关闭 LTO**：本项目以网络 I/O 为主，`lto = "thin"` 对运行收益很小，却显著延长链接时间。
+5. **保留 GHA 构建缓存**：`cache-from/to: type=gha,mode=max` 缓存前端、apt、Rust 依赖与 Docker 层。
+6. **本地开发优先 `cargo check`**；需要二进制时用 `cargo build`，只在部署前执行 `cargo build --release`。
+7. 如果必须频繁发布 arm64，建议后续使用 GitHub 原生 `ubuntu-24.04-arm` runner 做矩阵构建，再合并 manifest，避免 QEMU。
 
 ---
 

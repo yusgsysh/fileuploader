@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      multiarch:
+        description: "Also build linux/arm64 (slow under QEMU)"
+        type: boolean
+        default: false
 
 concurrency:
   group: container-${{ github.workflow }}-${{ github.ref }}
@@ -19,7 +24,7 @@ jobs:
   build-and-publish:
     name: Build and publish
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
@@ -37,8 +42,23 @@ jobs:
           echo "name=${REGISTRY}/${owner}/${repo,,}" >> "$GITHUB_OUTPUT"
           echo "package=${repo,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Select target platforms
+        id: platforms
+        shell: bash
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            value="linux/amd64"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            value="linux/amd64,linux/arm64"
+          elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${{ inputs.multiarch }}" = "true" ]; then
+            value="linux/amd64,linux/arm64"
+          else
+            value="linux/amd64"
+          fi
+          echo "value=${value}" >> "$GITHUB_OUTPUT"
+
       - name: Set up QEMU
-        if: github.event_name != 'pull_request'
+        if: contains(steps.platforms.outputs.value, 'arm64')
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -77,7 +97,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          platforms: ${{ steps.platforms.outputs.value }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

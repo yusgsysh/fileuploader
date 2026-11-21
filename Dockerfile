@@ -18,7 +18,16 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends cmake perl pkg-config \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
+ENV CARGO_NET_RETRY=5 \
+    CARGO_HTTP_TIMEOUT=60
 COPY Cargo.toml Cargo.lock ./
+# Build dependency crates in a cached layer. Source changes then only rebuild
+# this crate instead of recompiling the entire dependency graph.
+RUN mkdir -p src \
+    && printf 'fn main() {}\n' > src/main.rs \
+    && printf 'pub fn placeholder() {}\n' > src/lib.rs \
+    && cargo build --release --locked \
+    && rm -rf src
 COPY src ./src
 RUN cargo build --release --locked
 
