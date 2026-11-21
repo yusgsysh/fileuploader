@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use axum::{
     extract::DefaultBodyLimit,
     http::{header, HeaderName, HeaderValue},
+    middleware,
     routing::get,
     Router,
 };
@@ -110,6 +111,10 @@ async fn main() -> Result<()> {
             HeaderValue::from_static(
                 "default-src 'self'; connect-src 'self'; img-src 'self' data:;                  style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self';                  frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
             ),
+        ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            fileuploader::auth::basic_auth,
         ))
         .with_state(state.clone());
 

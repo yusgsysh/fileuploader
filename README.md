@@ -408,6 +408,8 @@ curl http://127.0.0.1:8080/healthz
 | `STATIC_DIR` | `./frontend/dist` | 前端构建产物 |
 | `LOG_FORMAT` | `pretty` | `pretty` / `json` |
 | `SEED_DEFAULT_S3` | `true` | 是否尝试从环境变量写入首个 S3 配置 |
+| `APP_BASIC_AUTH_USERNAME` | — | Web UI/API Basic Auth 用户名，需与密码同时设置 |
+| `APP_BASIC_AUTH_PASSWORD` | — | Web UI/API Basic Auth 密码，需与用户名同时设置 |
 | `S3_*` | — | 首次启动 S3 配置与环境凭据 |
 | `MEGA_HOME` | `./data/mega-home` | MEGAcmd HOME |
 | `MEGA_TEMP_DIR` | `./tmp/mega` | 临时目录根 |
@@ -489,6 +491,71 @@ SSE 事件：
 - `deleted`：任务 ID
 - `resync`：客户端应重新拉取
 - `hello` / keep-alive
+
+---
+
+## 访问认证（HTTP Basic Auth）
+
+Web UI 和 REST/SSE API 支持可选的 HTTP Basic Auth。未设置用户名/密码时保持原来的无认证模式。
+
+### Docker Compose / 环境变量
+
+在 `.env` 中设置（两者必须同时存在）：
+
+```dotenv
+APP_BASIC_AUTH_USERNAME=admin
+APP_BASIC_AUTH_PASSWORD=change-this-long-password
+```
+
+```bash
+chmod 600 .env
+docker compose up -d
+```
+
+### systemd + Quadlet
+
+推荐直接运行脚本，自动生成随机密码、凭据文件和 Quadlet drop-in：
+
+```bash
+# rootless
+./scripts/setup-basic-auth.sh
+
+# 指定用户名/密码
+./scripts/setup-basic-auth.sh admin 'your-password'
+
+# rootful
+sudo ./scripts/setup-basic-auth.sh --system
+```
+
+脚本会写入：
+
+- Rootless：`~/.config/fileuploader-auth.env`
+- Rootful：`/etc/fileuploader-auth.env`
+- 对应 Quadlet 的 `fileuploader.container.d/10-auth.conf`
+
+凭据文件权限为 `0600`，不会写入仓库或镜像。
+
+也可以手动复制示例：
+
+```bash
+mkdir -p ~/.config/containers/systemd/fileuploader.container.d
+cp deploy/systemd/user/fileuploader.container.d/10-auth.conf.example    ~/.config/containers/systemd/fileuploader.container.d/10-auth.conf
+# 编辑 10-auth.conf 中 EnvironmentFile 指向的凭据文件
+systemctl --user daemon-reload
+systemctl --user restart fileuploader.service
+```
+
+### 行为
+
+- 浏览器访问首页会收到 `401` 和 `WWW-Authenticate: Basic`，输入用户名密码后正常加载。
+- 同一来源的 `/api/*` 与 SSE 会复用浏览器缓存的 Basic 凭据。
+- `/healthz` 不要求认证，确保 Docker/Podman/systemd 健康检查正常。
+- 密码只在启动时从环境变量读入内存，不写入 SQLite 或前端配置。
+- 使用常量时间比较，失败不记录用户名/密码。
+- Basic Auth 仅做访问控制，**不能替代 HTTPS**。公开网络必须通过 Caddy/Nginx/Traefik 等提供 TLS。
+- 这里的 Basic Auth 保护管理界面；单次 HTTP 下载任务的 Basic Auth 仍独立配置在任务表单中。
+
+> 需要更强认证（多用户、会话、2FA、审计）时，建议在反向代理层接入 Authelia/Authentik 或 OAuth2 Proxy。
 
 ---
 
