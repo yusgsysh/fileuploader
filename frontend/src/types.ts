@@ -100,6 +100,7 @@ export interface CreateTaskInput {
   headers?: Record<string, string>;
   auth_username?: string;
   auth_password?: string;
+  mega_password?: string;
   allow_overwrite?: boolean;
 }
 

@@ -32,6 +32,7 @@ interface HomeForm {
   cookie: string;
   auth_username: string;
   auth_password: string;
+  mega_password: string;
   headers_text: string;
   allow_overwrite: boolean;
 }
@@ -47,6 +48,7 @@ const initialForm: HomeForm = {
   cookie: "",
   auth_username: "",
   auth_password: "",
+  mega_password: "",
   headers_text: "",
   allow_overwrite: false,
 };
@@ -129,6 +131,8 @@ export function HomePage() {
       cookie: form.cookie.trim() || undefined,
       auth_username: form.auth_username.trim() || undefined,
       auth_password: form.auth_password || undefined,
+      mega_password:
+        detected === "mega" && form.mega_password ? form.mega_password : undefined,
       headers: parseHeadersJson(form.headers_text),
       allow_overwrite: form.allow_overwrite,
     };
@@ -170,6 +174,18 @@ export function HomePage() {
               </div>
             </div>
           </Field>
+
+          {detected === "mega" ? (
+            <Field label="MEGA 分享密码">
+              <Input
+                type="password"
+                value={form.mega_password}
+                onChange={(event) => update("mega_password", event.target.value)}
+                placeholder="有密码时填写"
+                autoComplete="off"
+              />
+            </Field>
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="S3 配置">

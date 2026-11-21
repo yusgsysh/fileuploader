@@ -321,6 +321,7 @@ impl MegaService {
         &self,
         settings: &AppSettings,
         url: &str,
+        password: Option<&str>,
         task_id: &str,
         progress: ProgressHandle,
         cancel: CancellationToken,
@@ -344,8 +345,11 @@ impl MegaService {
 
         enforce_global_limit(settings)?;
         let mut command = Command::new(&settings.mega_get_path);
+        command.arg("--ignore-quota-warn");
+        if let Some(password) = password.filter(|value| !value.is_empty()) {
+            command.arg(format!("--password={password}"));
+        }
         command
-            .arg("--ignore-quota-warn")
             .arg(url)
             .arg(&task_dir)
             .env("HOME", &settings.mega_home)

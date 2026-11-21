@@ -235,7 +235,8 @@ pub fn validate_mega_share_url(raw: &str) -> Result<Url, String> {
     let path = url.path();
     let fragment = url.fragment().unwrap_or_default();
     let modern = path.starts_with("/file/") || path.starts_with("/folder/");
-    let legacy = fragment.starts_with('!') || fragment.starts_with("F!");
+    let legacy =
+        fragment.starts_with('!') || fragment.starts_with("F!") || fragment.starts_with("P!");
     if !modern && !legacy {
         return Err("Unsupported MEGA share link format".into());
     }
@@ -544,6 +545,8 @@ mod tests {
         assert!(validate_mega_share_url("https://mega.nz/file/abc123#key123").is_ok());
         assert!(validate_mega_share_url("https://mega.nz/folder/abc123#key123").is_ok());
         assert!(validate_mega_share_url("https://mega.nz/#!abc!key").is_ok());
+        assert!(validate_mega_share_url("https://mega.nz/file/abc123#P!encrypted").is_ok());
+        assert!(validate_mega_share_url("https://mega.nz/#P!encrypted").is_ok());
         assert!(validate_mega_share_url("https://example.com/file/a#b").is_err());
         assert!(validate_mega_share_url("https://mega.nz/file/abc").is_err());
     }

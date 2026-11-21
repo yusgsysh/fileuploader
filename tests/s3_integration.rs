@@ -84,6 +84,7 @@ async fn multipart_upload_and_size_verification() -> anyhow::Result<()> {
         headers_json: "{}".into(),
         auth_username: None,
         auth_password: None,
+        mega_password: None,
         allow_overwrite: false,
         attempt: 1,
         created_at: now.clone(),

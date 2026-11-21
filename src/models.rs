@@ -484,6 +484,8 @@ pub struct CreateTaskRequest {
     #[serde(default)]
     pub auth_password: Option<String>,
     #[serde(default)]
+    pub mega_password: Option<String>,
+    #[serde(default)]
     pub allow_overwrite: bool,
 }
 
@@ -515,6 +517,7 @@ pub struct TaskRecord {
     pub headers_json: String,
     pub auth_username: Option<String>,
     pub auth_password: Option<String>,
+    pub mega_password: Option<String>,
     pub allow_overwrite: bool,
     pub attempt: i64,
     pub created_at: String,

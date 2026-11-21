@@ -108,6 +108,7 @@ struct TaskRow {
     headers_json: String,
     auth_username: Option<String>,
     auth_password: Option<String>,
+    mega_password: Option<String>,
     allow_overwrite: i64,
     attempt: i64,
     created_at: String,
@@ -147,6 +148,7 @@ impl From<TaskRow> for TaskRecord {
             headers_json: row.headers_json,
             auth_username: row.auth_username,
             auth_password: row.auth_password,
+            mega_password: row.mega_password,
             allow_overwrite: row.allow_overwrite != 0,
             attempt: row.attempt,
             created_at: row.created_at,
@@ -164,8 +166,8 @@ const TASK_COLUMNS: &str = r#"
     filename, resolved_filename, content_type, total_bytes, downloaded_bytes,
     uploaded_bytes, status, stage, error, s3_upload_id, s3_key, temp_dir,
     temp_complete, user_agent, referer, cookie, headers_json, auth_username,
-    auth_password, allow_overwrite, attempt, created_at, updated_at, started_at,
-    finished_at, range_supported, temp_bytes
+    auth_password, mega_password, allow_overwrite, attempt, created_at, updated_at,
+    started_at, finished_at, range_supported, temp_bytes
 "#;
 
 impl Store {
@@ -264,6 +266,7 @@ impl Store {
                 headers_json TEXT NOT NULL DEFAULT '{}',
                 auth_username TEXT,
                 auth_password TEXT,
+                mega_password TEXT,
                 allow_overwrite INTEGER NOT NULL DEFAULT 0,
                 attempt INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
@@ -292,6 +295,23 @@ impl Store {
         ];
         for sql in statements {
             sqlx::query(sql).execute(&self.pool).await?;
+        }
+        self.migrate_task_columns().await?;
+        Ok(())
+    }
+
+    /// Older databases were created before MEGA share passwords were stored
+    /// separately. SQLite has no "ADD COLUMN IF NOT EXISTS", so inspect the
+    /// table first.
+    async fn migrate_task_columns(&self) -> Result<()> {
+        let columns: Vec<String> =
+            sqlx::query_scalar("SELECT name FROM pragma_table_info('tasks')")
+                .fetch_all(&self.pool)
+                .await?;
+        if !columns.iter().any(|name| name == "mega_password") {
+            sqlx::query("ALTER TABLE tasks ADD COLUMN mega_password TEXT")
+                .execute(&self.pool)
+                .await?;
         }
         Ok(())
     }
@@ -495,10 +515,10 @@ impl Store {
                 filename, resolved_filename, content_type, total_bytes, downloaded_bytes,
                 uploaded_bytes, status, stage, error, s3_upload_id, s3_key, temp_dir,
                 temp_complete, user_agent, referer, cookie, headers_json, auth_username,
-                auth_password, allow_overwrite, attempt, created_at, updated_at, started_at,
-                finished_at, range_supported, temp_bytes)
+                auth_password, mega_password, allow_overwrite, attempt, created_at, updated_at,
+                started_at, finished_at, range_supported, temp_bytes)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                       ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+                       ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&task.id)
         .bind(&task.url)
@@ -526,6 +546,7 @@ impl Store {
         .bind(&task.headers_json)
         .bind(&task.auth_username)
         .bind(&task.auth_password)
+        .bind(&task.mega_password)
         .bind(task.allow_overwrite as i64)
         .bind(task.attempt)
         .bind(&task.created_at)
