@@ -67,15 +67,7 @@ export function TasksPage() {
   return (
     <div className="space-y-6 animate-fade-up">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-cyan-700/70">
-            传输队列
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">任务列表</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            SSE 实时推送进度，断线时自动轮询。取消会中止当前分片上传。
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">任务列表</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="md" onClick={() => void refetch()} disabled={isFetching}>
             {isFetching ? (
@@ -182,11 +174,6 @@ export function TasksPage() {
           <h2 className="mt-4 text-sm font-medium text-slate-800">
             {tasks?.length ? "当前筛选条件下没有任务" : "暂无传输任务"}
           </h2>
-          <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-            {tasks?.length
-              ? "请调整筛选条件或搜索关键词。"
-              : "粘贴 HTTP 或 MEGA 分享链接，并选择 S3 目标即可开始。"}
-          </p>
           {!tasks?.length ? (
             <Link to="/" className="mt-5">
               <Button size="sm">开始新任务</Button>

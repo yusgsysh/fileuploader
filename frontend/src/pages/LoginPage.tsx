@@ -7,7 +7,6 @@ import {
   Loader2,
   LockKeyhole,
   LogIn,
-  ShieldCheck,
   UserPlus,
   UserRound,
 } from "lucide-react";
@@ -91,11 +90,6 @@ export function LoginPage() {
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">
                 {setupRequired ? "初始化管理员账号" : "登录 FileUploader"}
               </h1>
-              <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                {setupRequired
-                  ? "首次使用，请设置管理员用户名和密码。账号创建后即可进入控制台。"
-                  : "请输入管理员账号继续访问传输控制台。"}
-              </p>
             </div>
           </div>
 
@@ -117,7 +111,6 @@ export function LoginPage() {
 
             <Field
               label={setupRequired ? "设置密码" : "密码"}
-              hint={setupRequired ? "至少 8 个字符，请妥善保存。" : undefined}
             >
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -183,17 +176,7 @@ export function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-[11px] leading-relaxed text-emerald-800/80">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600/80" />
-            <span>
-              密码使用加盐哈希保存在服务器本地数据库中，登录状态通过 HttpOnly Cookie 维护。
-            </span>
-          </div>
         </div>
-
-        <p className="mt-5 text-center text-[11px] text-slate-600">
-          自托管 · 流式下载 · S3 兼容存储
-        </p>
       </div>
     </div>
   );

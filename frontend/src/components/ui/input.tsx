@@ -58,12 +58,10 @@ export function Label({
 
 export function Field({
   label,
-  hint,
   children,
   className,
 }: {
   label: string;
-  hint?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -71,9 +69,6 @@ export function Field({
     <div className={cn("space-y-0", className)}>
       <Label>{label}</Label>
       {children}
-      {hint ? (
-        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/75">{hint}</p>
-      ) : null}
     </div>
   );
 }

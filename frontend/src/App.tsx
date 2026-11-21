@@ -68,7 +68,6 @@ function NotFound() {
           <Compass className="h-6 w-6 text-slate-500" />
         </div>
         <h1 className="mt-4 text-lg font-medium text-slate-800">页面不存在</h1>
-        <p className="mt-1 text-sm text-slate-500">你访问的页面已被移除或从未存在。</p>
         <Link to="/" className="mt-5 inline-block">
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4" />

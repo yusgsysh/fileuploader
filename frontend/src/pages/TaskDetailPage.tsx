@@ -18,9 +18,7 @@ import {
   RefreshCw,
   RotateCcw,
   Server,
-  ShieldCheck,
   Trash2,
-  UploadCloud,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -444,12 +442,6 @@ export function TaskDetailPage() {
                     <Clipboard className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                {task.resolved_source === "mega" ? (
-                  <p className="mt-1.5 flex items-center gap-1 text-[10px] text-slate-600">
-                    <ShieldCheck className="h-3 w-3" />
-                    分享密钥不会写入应用日志。
-                  </p>
-                ) : null}
               </div>
               <Info label="内容类型" value={task.content_type ?? "—"} />
               <Info label="自定义请求头" value={task.has_custom_headers ? "已配置" : "无"} />
@@ -519,17 +511,6 @@ export function TaskDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[11px] leading-relaxed text-slate-500">
-            <div className="flex items-center gap-2 font-medium text-slate-700">
-              <UploadCloud className="h-3.5 w-3.5 text-emerald-700" />
-              安全说明
-            </div>
-            <ul className="mt-2 space-y-1.5">
-              <li>HTTP 响应体直接写入 S3 分片，不会缓存为完整本地文件。</li>
-              <li>取消任务会关闭活动流并调用 AbortMultipartUpload。</li>
-              <li>MEGA 上传失败时会保留独立临时目录，便于后续干净地重试。</li>
-            </ul>
-          </section>
         </div>
       </div>
     </div>

@@ -2,13 +2,10 @@ import { useEffect, useState } from "react";
 import type React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   Boxes,
-  Check,
   CheckCircle2,
   Cloud,
   CloudCog,
-  Cpu,
   Database,
   Gauge,
   HardDrive,
@@ -19,7 +16,6 @@ import {
   RefreshCw,
   Save,
   ServerCog,
-  Shield,
   Trash2,
   UserRound,
   X,
@@ -35,12 +31,7 @@ import type {
   S3ConfigInput,
   S3TestResult,
 } from "@/types";
-import {
-  cn,
-  formatBytes,
-  formatDate,
-  parseHeadersJson,
-} from "@/lib/utils";
+import { cn, formatDate, parseHeadersJson } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { Badge, Switch } from "@/components/ui/primitives";
@@ -56,19 +47,7 @@ export function SettingsPage() {
   return (
     <div className="space-y-6 animate-fade-up">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-cyan-700/70">
-            系统配置
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">设置</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            管理传输限制、MEGAcmd 路径与 S3 兼容存储目标。密钥类字段不会通过 API 返回。
-          </p>
-        </div>
-        <Badge tone="cyan" className="px-3 py-1">
-          <Shield className="h-3 w-3" />
-          凭据仅保存在服务端
-        </Badge>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">设置</h1>
       </div>
 
       <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1">
@@ -141,12 +120,10 @@ function TransferSettings({ state }: { state: SettingsState }) {
   if (isLoading || !settings) return <SettingsSkeleton />;
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-5 pb-28">
+    <div className="space-y-5 pb-28">
         <SettingsSection
           icon={Boxes}
           title="分片上传"
-          description="分片大小与上传并发共同决定内存占用和请求并行度。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
@@ -157,7 +134,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
               max={5120}
               step={1}
               onChange={(value) => update("part_size_bytes", Math.round(value * MiB))}
-              hint="S3 最小为 5 MiB，16 MiB 是较均衡的默认值。"
             />
             <NumberField
               label="上传并发数"
@@ -165,7 +141,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
               min={1}
               max={16}
               onChange={(value) => update("upload_concurrency", value)}
-              hint="每个任务同时进行的 UploadPart 请求上限。"
             />
             <NumberField
               label="最大待上传分片数"
@@ -173,7 +148,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
               min={1}
               max={32}
               onChange={(value) => update("max_pending_parts", value)}
-              hint="下载器与上传器之间的有界队列长度。"
             />
             <NumberField
               label="HTTP 缓冲区"
@@ -183,25 +157,13 @@ function TransferSettings({ state }: { state: SettingsState }) {
               max={16384}
               step={64}
               onChange={(value) => update("http_buffer_bytes", Math.round(value * 1024))}
-              hint="HTTP 数据流的单次处理窗口大小。"
             />
-          </div>
-          <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-[11px] leading-relaxed text-cyan-800/70">
-            预估最坏情况下的流式缓冲占用：{" "}
-            <span className="font-mono text-cyan-700">
-              {formatBytes(
-                settings.part_size_bytes *
-                  (settings.max_pending_parts + settings.upload_concurrency + 2),
-              )}
-            </span>{" "}
-            外加 SDK/TLS 开销。无论文件多大，内存占用都有上界。
           </div>
         </SettingsSection>
 
         <SettingsSection
           icon={Gauge}
           title="调度与容错"
-          description="并发闸门、重试预算与超时保护。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
@@ -224,7 +186,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
               min={1}
               max={1000}
               onChange={(value) => update("max_queued_tasks", value)}
-              hint="队列满后会拒绝创建新任务。"
             />
             <NumberField
               label="重试次数"
@@ -240,7 +201,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
               min={1}
               max={3600}
               onChange={(value) => update("http_timeout_secs", value)}
-              hint="连接及单次数据块的空闲超时。"
             />
             <NumberField
               label="最大重定向次数"
@@ -256,7 +216,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
               min={0}
               step={0.5}
               onChange={(value) => update("max_file_bytes", Math.round(value * GiB))}
-              hint="0 表示不限制，对 HTTP 与 MEGA 总量均生效。"
             />
             <NumberField
               label="任务最长运行时间"
@@ -271,37 +230,6 @@ function TransferSettings({ state }: { state: SettingsState }) {
         </SettingsSection>
 
         <SaveBar pending={save.isPending} onClick={() => save.mutate(settings)} />
-      </div>
-
-      <aside className="space-y-5">
-        <InfoCard
-          icon={Cpu}
-          title="背压模型"
-          items={[
-            "HTTP 流 → 固定分片缓冲",
-            "有界 mpsc 队列（待上传分片）",
-            "固定数量的 UploadPart 工作线程",
-            "失败或取消时中止分片上传",
-          ]}
-        />
-        <InfoCard
-          icon={HardDrive}
-          title="内存占用"
-          items={[
-            `分片缓冲：${formatBytes(settings.part_size_bytes)}`,
-            `待上传队列：${settings.max_pending_parts} 个分片`,
-            `上传并发：${settings.upload_concurrency}`,
-            `HTTP 并发：${settings.max_http_tasks} 个任务`,
-          ]}
-        />
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[11px] leading-relaxed text-amber-800/80">
-          <div className="mb-1 flex items-center gap-2 font-medium text-amber-700">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            调整限制
-          </div>
-          新值会立即作用于后续调度的任务；正在运行的传输在本次尝试中继续使用原有分片大小。
-        </div>
-      </aside>
     </div>
   );
 }
@@ -339,10 +267,9 @@ function MegaSettings({ state }: { state: SettingsState }) {
         <SettingsSection
           icon={ServerCog}
           title="MEGAcmd 路径"
-          description="请使用官方 MEGAcmd 可执行文件，命令不会经过 Shell 执行。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="mega-get 路径" hint="绝对路径，或 PATH 中的可执行文件名。">
+            <Field label="mega-get 路径">
               <Input
                 value={settings.mega_get_path}
                 onChange={(event) => update("mega_get_path", event.target.value)}
@@ -356,14 +283,14 @@ function MegaSettings({ state }: { state: SettingsState }) {
                 spellCheck={false}
               />
             </Field>
-            <Field label="mega-whoami 路径" hint="用于检查登录会话和服务状态。">
+            <Field label="mega-whoami 路径">
               <Input
                 value={settings.mega_whoami_path}
                 onChange={(event) => update("mega_whoami_path", event.target.value)}
                 spellCheck={false}
               />
             </Field>
-            <Field label="MEGAcmd HOME" hint="持久化会话保存在 HOME/.megaCmd 下。">
+            <Field label="MEGAcmd HOME">
               <Input
                 value={settings.mega_home}
                 onChange={(event) => update("mega_home", event.target.value)}
@@ -379,12 +306,7 @@ function MegaSettings({ state }: { state: SettingsState }) {
             </Field>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div>
-              <div className="text-xs font-medium text-slate-800">自动启动 MEGAcmd 服务</div>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                需要时由命令自动拉起服务；使用 Docker 时也可以独立管理。
-              </p>
-            </div>
+            <div className="text-xs font-medium text-slate-800">自动启动 MEGAcmd 服务</div>
             <Switch
               checked={settings.mega_auto_start_server}
               onCheckedChange={(value) => update("mega_auto_start_server", value)}
@@ -395,7 +317,6 @@ function MegaSettings({ state }: { state: SettingsState }) {
         <SettingsSection
           icon={HardDrive}
           title="MEGA 磁盘与并发"
-          description="每个任务使用独立目录；上传失败时保留文件以便重试。"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
@@ -412,7 +333,6 @@ function MegaSettings({ state }: { state: SettingsState }) {
               min={0}
               step={0.5}
               onChange={(value) => update("mega_max_task_bytes", Math.round(value * GiB))}
-              hint="0 表示不限制。"
             />
             <NumberField
               label="临时空间总上限"
@@ -430,7 +350,6 @@ function MegaSettings({ state }: { state: SettingsState }) {
               max={2160}
               step={1}
               onChange={(value) => update("mega_retention_secs", Math.round(value * 3600))}
-              hint="启动时会按保留时长清理失败任务的临时文件。"
             />
             <NumberField
               label="mega-get 超时"
@@ -515,17 +434,6 @@ function MegaSettings({ state }: { state: SettingsState }) {
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-[11px] leading-relaxed text-violet-800/80">
-          <div className="mb-1 flex items-center gap-2 font-medium text-violet-700">
-            <KeyRound className="h-3.5 w-3.5" />
-            登录与会话
-          </div>
-          FileUploader 不会保存 MEGA 密码。请在容器内使用{" "}
-          <code className="rounded bg-slate-100 px-1 py-0.5 text-[10px] text-violet-800">
-            mega-login
-          </code>{" "}
-          登录一次，会话会保存在 MEGAcmd HOME 卷中。
-        </div>
       </aside>
     </div>
   );
@@ -573,12 +481,10 @@ function AccountSettings() {
   };
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-5">
+    <div className="space-y-5">
         <SettingsSection
           icon={UserRound}
           title="管理员账号"
-          description="修改登录用户名下的密码。密码使用 PBKDF2 加盐哈希存储。"
         >
           <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
             当前账号：<span className="text-slate-800">{status?.username ?? "—"}</span>
@@ -593,7 +499,7 @@ function AccountSettings() {
                 autoComplete="current-password"
               />
             </Field>
-            <Field label="新密码" hint="至少 8 个字符。">
+            <Field label="新密码">
               <Input
                 type="password"
                 value={next}
@@ -623,17 +529,6 @@ function AccountSettings() {
             </div>
           </form>
         </SettingsSection>
-      </div>
-
-      <aside className="space-y-5">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-[11px] leading-relaxed text-emerald-800/80">
-          <div className="mb-1 flex items-center gap-2 font-medium text-emerald-700">
-            <Shield className="h-3.5 w-3.5" />
-            会话安全
-          </div>
-          登录状态通过 HttpOnly Cookie 维持，有效期 7 天。修改密码后其他设备的会话会立即失效。
-        </div>
-      </aside>
     </div>
   );
 }
@@ -799,12 +694,7 @@ function S3Settings() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">目标存储</h2>
-              <p className="text-[11px] text-slate-500">
-                支持 AWS S3、Cloudflare R2、MinIO、Backblaze B2、Wasabi 及兼容 API。
-              </p>
-            </div>
+            <h2 className="text-sm font-semibold text-slate-900">目标存储</h2>
             <Button
               variant="outline"
               size="sm"
@@ -828,9 +718,6 @@ function S3Settings() {
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-12 text-center">
               <Cloud className="mx-auto h-8 w-8 text-slate-600" />
               <div className="mt-3 text-sm text-slate-700">尚未配置 S3</div>
-              <p className="mt-1 text-xs text-slate-500">
-                在右侧添加 Cloudflare R2 凭据或任意 S3 兼容端点。
-              </p>
             </div>
           ) : (
             configs.map((config) => (
@@ -922,9 +809,6 @@ function S3Settings() {
                 <h2 className="text-sm font-semibold text-slate-900">
                   {form.id ? "编辑配置" : "新建配置"}
                 </h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">
-                  密钥类字段在界面中只写不读。
-                </p>
               </div>
               {form.id ? (
                 <Button variant="ghost" size="icon" onClick={reset} title="取消编辑">
@@ -949,7 +833,6 @@ function S3Settings() {
               </Field>
               <Field
                 label="端点"
-                hint="R2：https://<account-id>.r2.cloudflarestorage.com；AWS 可留空。"
               >
                 <Input
                   value={form.endpoint}
@@ -959,7 +842,7 @@ function S3Settings() {
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="区域" hint="R2 使用 auto。">
+                <Field label="区域">
                   <Input
                     value={form.region}
                     onChange={(event) => setForm({ ...form, region: event.target.value })}
@@ -986,11 +869,6 @@ function S3Settings() {
               </Field>
               <Field
                 label="Secret Access Key"
-                hint={
-                  form.id && form.secret_set
-                    ? "留空表示保留现有密钥。"
-                    : "仅保存在服务端，不会返回给前端。"
-                }
               >
                 <Input
                   type="password"
@@ -1008,7 +886,7 @@ function S3Settings() {
                   spellCheck={false}
                 />
               </Field>
-              <Field label="自定义元数据" hint="每行一个：键: 值">
+              <Field label="自定义元数据">
                 <Textarea
                   value={form.metadata_text}
                   onChange={(event) => setForm({ ...form, metadata_text: event.target.value })}
@@ -1059,14 +937,6 @@ function S3Settings() {
               </Button>
             </div>
           </div>
-
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[11px] leading-relaxed text-amber-800/80">
-            <div className="mb-1 flex items-center gap-2 font-medium text-amber-700">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Cloudflare R2 注意事项
-            </div>
-            区域请使用 <code className="rounded bg-slate-50 px-1">auto</code>，开启路径风格访问，并在 R2 控制台创建 S3 API Token。端点不是公开的 r2.dev 开发地址。
-          </div>
         </div>
       </div>
     </div>
@@ -1102,24 +972,19 @@ function TestResultCard({ result }: { result: S3TestResult }) {
 function SettingsSection({
   icon: Icon,
   title,
-  description,
   children,
 }: {
   icon: typeof Boxes;
   title: string;
-  description: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="panel p-5 sm:p-6">
-      <div className="mb-5 flex items-start gap-3">
+      <div className="mb-5 flex items-center gap-3">
         <div className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white">
           <Icon className="h-4 w-4 text-cyan-700" />
         </div>
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-          <p className="mt-0.5 text-[11px] text-slate-500">{description}</p>
-        </div>
+        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
       </div>
       {children}
     </section>
@@ -1134,7 +999,6 @@ function NumberField({
   max,
   step = 1,
   suffix,
-  hint,
 }: {
   label: string;
   value: number;
@@ -1143,10 +1007,9 @@ function NumberField({
   max?: number;
   step?: number;
   suffix?: string;
-  hint?: string;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label}>
       <div className="relative">
         <Input
           type="number"
@@ -1169,41 +1032,11 @@ function NumberField({
 
 function SaveBar({ pending, onClick }: { pending: boolean; onClick: () => void }) {
   return (
-    <div className="sticky bottom-4 z-20 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-background/90 px-4 py-3 shadow-panel backdrop-blur-xl">
-      <div className="text-[11px] text-slate-500">
-        保存前会由服务端校验数值范围。
-      </div>
+    <div className="sticky bottom-4 z-20 flex items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-background/90 px-4 py-3 shadow-panel backdrop-blur-xl">
       <Button onClick={onClick} disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         保存更改
       </Button>
-    </div>
-  );
-}
-
-function InfoCard({
-  icon: Icon,
-  title,
-  items,
-}: {
-  icon: typeof Cpu;
-  title: string;
-  items: string[];
-}) {
-  return (
-    <div className="panel p-5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-        <Icon className="h-4 w-4 text-cyan-700" />
-        {title}
-      </div>
-      <ul className="mt-3 space-y-2">
-        {items.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-[11px] text-slate-500">
-            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600/80" />
-            {item}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

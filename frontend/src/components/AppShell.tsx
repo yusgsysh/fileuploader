@@ -174,7 +174,6 @@ export function AppShell() {
             <Outlet />
           </main>
           <footer className="mx-auto flex w-full max-w-[1240px] flex-wrap items-center justify-between gap-2 px-4 pb-8 text-[11px] text-slate-600 sm:px-6 lg:px-10">
-            <span>流式下载 → 有界分片上传 → S3 兼容对象存储</span>
             <span className="inline-flex items-center gap-1.5">
               <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-500" : "bg-amber-500")} />
               {connected ? "SSE 已连接" : "SSE 重连中"}

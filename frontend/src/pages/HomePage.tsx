@@ -7,19 +7,13 @@ import {
   ArrowUpFromLine,
   CheckCircle2,
   ChevronDown,
-  Cloud,
-  DatabaseZap,
   DownloadCloud,
-  FolderTree,
   Gauge,
   HardDrive,
   KeyRound,
   Link2,
   Loader2,
   ServerCog,
-  ShieldCheck,
-  Sparkles,
-  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError, queryKeys } from "@/lib/api";
@@ -176,20 +170,11 @@ export function HomePage() {
         <div className="pointer-events-none absolute -bottom-36 left-1/3 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl" />
         <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] text-cyan-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              流式优先的传输引擎
-            </div>
             <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-[40px] sm:leading-[1.08]">
               粘贴链接，立即流式传输。
               <br />
               <span className="gradient-text">直接写入 S3。</span>
             </h1>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
-              HTTP 下载全程不落盘。MEGA 链接通过官方{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] text-slate-700">mega-get</code>{" "}
-              下载到隔离的临时目录后再上传。两者共用同一个有界分片上传引擎。
-            </p>
           </div>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:min-w-[370px]">
             {[
@@ -226,12 +211,7 @@ export function HomePage() {
               <div className="grid h-8 w-8 place-items-center rounded-lg bg-cyan-50 text-cyan-700">
                 <Link2 className="h-4 w-4" />
               </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">新建传输任务</h2>
-                <p className="text-[11px] text-slate-500">
-                  设置来源、目标与传输策略
-                </p>
-              </div>
+              <h2 className="text-sm font-semibold text-slate-900">新建传输任务</h2>
             </div>
             <Badge tone="cyan">{detected ? detected.toUpperCase() : "自动识别"}</Badge>
           </div>
@@ -240,11 +220,6 @@ export function HomePage() {
             <div>
               <Field
                 label="下载链接"
-                hint={
-                  <>
-                    HTTP/HTTPS 链接带 SSRF 防护抓取；MEGA 分享链接使用官方 MEGAcmd，完整分享密钥会被保留。
-                  </>
-                }
               >
                 <div className="relative">
                   <Link2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -293,7 +268,7 @@ export function HomePage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="S3 配置" hint="访问凭据仅保存在服务器端。">
+              <Field label="S3 配置">
                 <Select
                   value={form.s3_config_id}
                   onChange={(event) => {
@@ -317,7 +292,7 @@ export function HomePage() {
                   ))}
                 </Select>
               </Field>
-              <Field label="存储桶" hint="可手动输入，也可从当前凭据可见的存储桶中选择。">
+              <Field label="存储桶">
                 <Input
                   value={form.bucket}
                   onChange={(event) => update("bucket", event.target.value)}
@@ -332,7 +307,6 @@ export function HomePage() {
               </Field>
               <Field
                 label="对象路径"
-                hint="可选。以 / 结尾会自动拼接识别出的文件名；MEGA 文件夹任务中作为前缀。"
               >
                 <Input
                   value={form.object_key}
@@ -341,7 +315,7 @@ export function HomePage() {
                   spellCheck={false}
                 />
               </Field>
-              <Field label="自定义文件名" hint="可选。未填写时使用 Content-Disposition 中的文件名。">
+              <Field label="自定义文件名">
                 <Input
                   value={form.filename}
                   onChange={(event) => update("filename", event.target.value)}
@@ -359,9 +333,6 @@ export function HomePage() {
               <span className="flex items-center gap-2 text-xs font-medium text-slate-700">
                 <KeyRound className="h-3.5 w-3.5 text-slate-500" />
                 请求选项与凭据
-                <span className="text-[10px] font-normal text-slate-600">
-                  User-Agent、Cookie、请求头、Basic Auth
-                </span>
               </span>
               <ChevronDown
                 className={cn(
@@ -411,7 +382,7 @@ export function HomePage() {
                     autoComplete="new-password"
                   />
                 </Field>
-                <Field label="自定义请求头" hint="每行一个：名称: 值">
+                <Field label="自定义请求头">
                   <Textarea
                     value={form.headers_text}
                     onChange={(event) => update("headers_text", event.target.value)}
@@ -421,12 +392,7 @@ export function HomePage() {
                   />
                 </Field>
                 <div className="sm:col-span-2 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <div>
-                    <div className="text-xs font-medium text-amber-800">允许覆盖已有对象</div>
-                    <p className="mt-0.5 text-[11px] text-amber-700/70">
-                      默认关闭。同名任务重试时可以替换自己产生的未完成对象。
-                    </p>
-                  </div>
+                  <div className="text-xs font-medium text-amber-800">允许覆盖已有对象</div>
                   <Switch
                     checked={form.allow_overwrite}
                     onCheckedChange={(value) => update("allow_overwrite", value)}
@@ -440,7 +406,7 @@ export function HomePage() {
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
                 <span className="inline-flex items-center gap-2">
                   <ServerCog className="h-4 w-4" />
-                  尚未配置 S3。请先在设置中添加 R2、MinIO 或 AWS S3 凭据。
+                  尚未配置 S3
                 </span>
                 <Link to="/settings" className="font-medium text-amber-700 underline-offset-4 hover:underline">
                   前往设置
@@ -448,11 +414,7 @@ export function HomePage() {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600/80" />
-                每次重定向都会拦截私有 IP 与云元数据地址。
-              </div>
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
               <Button
                 type="submit"
                 size="lg"
@@ -472,33 +434,6 @@ export function HomePage() {
         </Card>
 
         <div className="space-y-5">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <Wand2 className="h-4 w-4 text-cyan-700" />
-              传输流水线
-            </div>
-            <div className="mt-4 space-y-4">
-              <PipelineStep
-                icon={Cloud}
-                title="HTTP / HTTPS"
-                detail="Reqwest 流 → 固定缓冲区 → 有界队列，完全不落盘。"
-                tone="cyan"
-              />
-              <PipelineStep
-                icon={FolderTree}
-                title="MEGA 分享"
-                detail="官方 mega-get → 任务独立临时目录 → 异步文件流。"
-                tone="violet"
-              />
-              <PipelineStep
-                icon={DatabaseZap}
-                title="S3 multipart"
-                detail="16 MiB 分片、有界并发，取消或失败时自动中止。"
-                tone="emerald"
-              />
-            </div>
-          </Card>
-
           <Card className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -551,7 +486,7 @@ export function HomePage() {
             <div className="mt-3 space-y-2">
               {recent.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-[11px] text-slate-500">
-                  暂无传输记录，创建的任务会显示在这里。
+                  暂无传输记录
                 </div>
               ) : (
                 recent.map((task) => (
@@ -579,35 +514,6 @@ export function HomePage() {
             </div>
           </Card>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function PipelineStep({
-  icon: Icon,
-  title,
-  detail,
-  tone,
-}: {
-  icon: typeof Cloud;
-  title: string;
-  detail: string;
-  tone: "cyan" | "violet" | "emerald";
-}) {
-  const tones = {
-    cyan: "bg-cyan-50 text-cyan-700",
-    violet: "bg-violet-50 text-violet-700",
-    emerald: "bg-emerald-50 text-emerald-700",
-  };
-  return (
-    <div className="flex gap-3">
-      <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-lg", tones[tone])}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div>
-        <div className="text-xs font-medium text-slate-800">{title}</div>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{detail}</p>
       </div>
     </div>
   );
